@@ -240,6 +240,7 @@ class plagiarism_setup_form extends moodleform
                     [0, 1]
                 );
                 $mform->setDefault('add_attr_discusname', 1);
+                /*
                 $mform->addElement(
                     'advcheckbox',
                     'add_attr_fioauthor',
@@ -251,6 +252,7 @@ class plagiarism_setup_form extends moodleform
                 $mform->setDefault('add_attr_fioauthor', 0);
                 $mform->addElement('advcheckbox', 'add_attr_idauthor', get_string('add_attr_idauthor', 'plagiarism_advacheck'), '', [], [0, 1]);
                 $mform->setDefault('add_attr_idauthor', 1);
+                */
 
                 $buttonarray = array();
                 $buttonarray[] = &$mform->createElement('html', html_writer::tag('button', get_string('save'), ['class' => 'btn btn-primary', 'type' => 'submit', 'name' => 'submitbutton']));

@@ -81,7 +81,7 @@ function plagiarism_advacheck_start_file_verify($typeid, $courseid)
 
     $params = [ADVACHECK_FILE, $data->userid, ADVACHECK_ININDEX, $data->answerid];
 
-    if (isset($mod_ins_id)) {
+    if (isset ($mod_ins_id)) {
         $params[] = $mod_ins_id;
     }
     $fs = get_file_storage();
@@ -157,7 +157,7 @@ function remove_from_index($doc)
 {
     global $DB;
     $api = new plagiarism_advacheck\advacheck_api();
-    if (empty($doc->docidantplgt)) {
+    if (empty ($doc->docidantplgt)) {
         return;
     }
     $docid = unserialize($doc->docidantplgt);
@@ -222,7 +222,7 @@ function remove_from_index($doc)
             }
             // Minimum possible AP server polling frequency.
             time_nanosleep(0, 400000000);
-        } while (isset($di->AddedToIndex));
+        } while (isset ($di->AddedToIndex));
         // Set the status to deleted from the index.
         $DB->set_field("plagiarism_advacheck_docs", "status", ADVACHECK_CHECKED, ["id" => $doc->id]);
         // A record indicating the completion of deletion from the index.
@@ -444,30 +444,30 @@ function prepare_doc_attr($info_data, $cmid, $courseid, $docid)
     $site_description = strip_tags($site->summary);
 
     $attr = [];
-    if (!empty($plugin_cfg->add_attr_system)) {
+    if (!empty ($plugin_cfg->add_attr_system)) {
         $attr[] = ["AttrName" => get_string('add_attr_system', 'plagiarism_advacheck'), "AttrValue" => $site_name];
     }
-    if (!empty($plugin_cfg->add_attr_descr)) {
+    if (!empty ($plugin_cfg->add_attr_descr)) {
         $attr[] = ["AttrName" => get_string('add_attr_descr', 'plagiarism_advacheck'), "AttrValue" => $site_description];
     }
-    if (!empty($plugin_cfg->add_attr_site)) {
+    if (!empty ($plugin_cfg->add_attr_site)) {
         $attr[] = ["AttrName" => get_string('add_attr_site', 'plagiarism_advacheck'), "AttrValue" => $CFG->wwwroot];
     }
-    if (!empty($plugin_cfg->add_attr_course)) {
+    if (!empty ($plugin_cfg->add_attr_course)) {
         $attr[] = ["AttrName" => get_string('add_attr_course', 'plagiarism_advacheck'), "AttrValue" => $info_data->coursefullname];
     }
-    if (!empty($plugin_cfg->add_attr_item)) {
+    if (!empty ($plugin_cfg->add_attr_item)) {
         $attr[] = ["AttrName" => get_string('add_attr_item', 'plagiarism_advacheck'), "AttrValue" => $info_data->cm_name];
     }
-    if (isset($info_data->d_name) && !empty($plugin_cfg->add_attr_discusname)) {
+    if (isset ($info_data->d_name) && !empty ($plugin_cfg->add_attr_discusname)) {
         $attr[] = ["AttrName" => get_string('add_attr_discusname', 'plagiarism_advacheck'), "AttrValue" => $info_data->d_name];
     }
-    if (!empty($plugin_cfg->add_attr_fioauthor)) {
+    /*if (!empty($plugin_cfg->add_attr_fioauthor)) {
         $sql = "SELECT CONCAT(lastname, ' ', firstname) AS fio FROM {user} WHERE id = $info_data->userid";
         $user = $DB->get_record_sql($sql);
         $attr[] = ["AttrName" => get_string('add_attr_fioauthor', 'plagiarism_advacheck'), "AttrValue" => $user->fio];
-    }
-    if (!empty($plugin_cfg->add_attr_idauthor)) {
+    }*/
+    if (!empty ($plugin_cfg->add_attr_idauthor)) {
         $attr[] = ["AttrName" => get_string('add_attr_idauthor', 'plagiarism_advacheck'), "AttrValue" => $info_data->userid];
     }
 
@@ -529,7 +529,7 @@ function plagiarism_start_doc_verify($filename, $content, $is_long_str, $data, $
             // Start uploading.
             upload_man($ap_docid, $result, $api_data, $data, $api, $filename, $content, $attributes);
             // Output information in case of errors.
-            if (empty($ap_docid)) {
+            if (empty ($ap_docid)) {
                 return $result;
             }
             // Start checking.
@@ -539,13 +539,13 @@ function plagiarism_start_doc_verify($filename, $content, $is_long_str, $data, $
             }
         }
 
-        if (isset($ap_docid)) {
+        if (isset ($ap_docid)) {
             // Let's wait 5 seconds and ask for the verification status; if the answer is not large, then it could have been verified.
             sleep(5);
             // Query verification status. 
             $st_curr = $api->get_current_check_status($ap_docid);
 
-            if (isset($st_curr->error)) {
+            if (isset ($st_curr->error)) {
                 // Error handling when trying to request a check status.
                 $status = ADVACHECK_ERROR_GET_STATUS;
                 $DB->set_field('plagiarism_advacheck_docs', 'error', $st_curr->error, ['id' => $data->id]);
@@ -683,7 +683,7 @@ function plagiarism_start_doc_verify($filename, $content, $is_long_str, $data, $
                         $data->id,
                         $api_data->status
                     );
-                } elseif (!empty($st_curr->msg)) {
+                } elseif (!empty ($st_curr->msg)) {
                     // Any status other than the above is an error in the verification process.
                     $status = ADVACHECK_ERROR_CHECK;
                     $m = "Проверка завершилась со статусом $st_curr->status, ошибка: $st_curr->msg";
@@ -1070,7 +1070,7 @@ function get_advacheck_tarif_info_html($login, $password, $soap_wsdl, $url)
     // Structure for sending a response to a page.
     $tariff_info_html = new stdClass();
     $tariff_info = plagiarism_advacheck\advacheck_api::check_tarif($login, $password, $soap_wsdl);
-    if (!empty($tariff_info->error)) {
+    if (!empty ($tariff_info->error)) {
         $a = $tariff_info->error;
         $tariff_info_html->message = '<div class="alert alert-danger alert-block fade in  alert-dismissible"><button type="button" class="close" data-dismiss="alert">×</button>';
         $tariff_info_html->message .= get_string('error_check', 'plagiarism_advacheck', $a) . "</div>";
@@ -1160,7 +1160,7 @@ function update_advacheck_report($typeid)
     }
 
     $originality = 0;
-    if (!isset($api_data->error) && $api_data->status === "Ready") {
+    if (!isset ($api_data->error) && $api_data->status === "Ready") {
         calc_orig($api_data->plagiarism, $api_data->legal, $api_data->selfcite, $originality);
         $data->plagiarism = $api_data->plagiarism;
         $data->legal = $api_data->legal;
@@ -1186,7 +1186,7 @@ function update_advacheck_report($typeid)
             $data->id,
             $data->status
         );
-    } elseif (!empty($api_data->error)) {
+    } elseif (!empty ($api_data->error)) {
         $result->error = $api_data->error;
         $DB->set_field("plagiarism_advacheck_docs", "error", $api_data->error, ["id" => $data->id]);
         queue_log(
@@ -1278,10 +1278,10 @@ function assemble_filename($content)
     $filename = '';
     $str_name = mb_substr($content, 0, 30);
     $arr = preg_split('/[^\w]+/u', $str_name);
-    if (empty($arr[1])) {
+    if (empty ($arr[1])) {
         $arr[1] = '';
     }
-    if (empty($arr[2])) {
+    if (empty ($arr[2])) {
         $arr[2] = '';
     }
     if ((mb_strlen($arr[0]) + mb_strlen($arr[1]) + mb_strlen($arr[2])) > 16) {
@@ -1437,7 +1437,7 @@ function queue_log(
     $mt_int = intval($mt);
     $ms = round($mt - $mt_int, 4);
     $k = explode('.', $ms . '');
-    $k[1] = isset($k[1]) ? $k[1] : 0;
+    $k[1] = isset ($k[1]) ? $k[1] : 0;
     // Receiving settings for checking the current course module.
     $cm_sett = $DB->get_record('plagiarism_advacheck_course', ['cmid' => $cmid, 'courseid' => $courseid]);
 
@@ -1510,7 +1510,7 @@ function queue_log(
     $m = get_string_manager()->get_string('action_log_cmsettings', 'plagiarism_advacheck', $a, $CFG->lang);
 
     $row['docid'] = $docid;
-    $row['docidantplgt'] = empty($docidantplgt) ? '' : $docidantplgt;
+    $row['docidantplgt'] = empty ($docidantplgt) ? '' : $docidantplgt;
     $row['reportedit'] = $reportedit;
     $row['time_action'] = $mt;
     $row['time_action_hr'] = date('d-m-Y H:i:s', $mt_int) . ".$k[1]";
@@ -1631,7 +1631,7 @@ function add_to_queue_quiz_text($crs_ctxt, $mod_ctxt, $plugin_cfg, $a, $courseid
 {
     global $CFG, $DB;
 
-    if (!isset($a->txt)) {
+    if (!isset ($a->txt)) {
         $a->txt = '';
     }
 
@@ -1803,7 +1803,7 @@ function add_to_queue_assign_text($crs_ctxt, $mod_ctxt, $plugin_cfg, $s, $course
     // Checking if there is a record with hash of old algorithm.
     // If Moodle 3.3.3 and below.
     if ($CFG->version < 2017051504) {
-        require_once($CFG->dirroot . '/mod/assign/locallib.php');
+        require_once ($CFG->dirroot . '/mod/assign/locallib.php');
         list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'assign');
         $assign = new assign($mod_ctxt, $cm, $course);
         $content = $assign->render_editor_content(
@@ -1816,7 +1816,7 @@ function add_to_queue_assign_text($crs_ctxt, $mod_ctxt, $plugin_cfg, $s, $course
         $content = trim($content);
     } else {
         // If Moodle 3.3.4 and higher
-        if (!isset($s->txt)) {
+        if (!isset ($s->txt)) {
             $s->txt = '';
         }
         $content = trim($s->txt);
@@ -2000,7 +2000,7 @@ function get_autor_fio($userid)
 
     $u = $DB->get_record_sql($sql);
 
-    $afio = empty($u->firstname2) ? $u->firstname : "$u->firstname2 $u->middlename";
+    $afio = empty ($u->firstname2) ? $u->firstname : "$u->firstname2 $u->middlename";
     $afio = "$u->lastname $afio";
     return $afio;
 }
@@ -2019,7 +2019,7 @@ function get_verifier_fio($courseid, $uid = null)
     global $DB;
     $vfio = '';
 
-    if (isset($uid)) {
+    if (isset ($uid)) {
         $sql = "SELECT
         u.id,
         u.lastname,
