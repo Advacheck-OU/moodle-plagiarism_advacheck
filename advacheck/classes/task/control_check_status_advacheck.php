@@ -56,11 +56,11 @@ class control_check_status_advacheck extends \core\task\scheduled_task
         }
 
         echo PHP_EOL . get_string_manager()->get_string('control_check_status_enter', 'plagiarism_advacheck', null, $CFG->lang) . PHP_EOL;
-        require_once($CFG->libdir . '/filelib.php');
-        require_once($CFG->dirroot . '/mod/assign/locallib.php');
-        require_once($CFG->dirroot . "/plagiarism/advacheck/locallib.php");
-        require_once($CFG->dirroot . '/plagiarism/advacheck/constants.php');
-        require_once($CFG->dirroot . "/plagiarism/advacheck/lib.php");
+        require_once ($CFG->libdir . '/filelib.php');
+        require_once ($CFG->dirroot . '/mod/assign/locallib.php');
+        require_once ($CFG->dirroot . "/plagiarism/advacheck/locallib.php");
+        require_once ($CFG->dirroot . '/plagiarism/advacheck/constants.php');
+        require_once ($CFG->dirroot . "/plagiarism/advacheck/lib.php");
 
         if (empty($this->config->uri) || empty($this->config->login) || empty($this->config->password)) {
             echo PHP_EOL . get_string_manager()->get_string('control_check_status_nologindata', 'plagiarism_advacheck', null, $CFG->lang) . PHP_EOL;
@@ -87,11 +87,11 @@ class control_check_status_advacheck extends \core\task\scheduled_task
         $data = $DB->get_records_sql(
             $sql,
             [
-                ADVACHECK_UPLOADED,
-                ADVACHECK_CHECKING,
-                ADVACHECK_ERROR_CHECKING,
-                ADVACHECK_ERROR_GET_STATUS,
-                ADVACHECK_ERROR_INDEX,
+                PLAGIARISM_ADVACHECK_UPLOADED,
+                PLAGIARISM_ADVACHECK_CHECKING,
+                PLAGIARISM_ADVACHECK_ERROR_CHECKING,
+                PLAGIARISM_ADVACHECK_ERROR_GET_STATUS,
+                PLAGIARISM_ADVACHECK_ERROR_INDEX,
             ],
             0,
             $count
@@ -111,7 +111,7 @@ class control_check_status_advacheck extends \core\task\scheduled_task
             $a->status = $item->status;
             $a->time = date('d:m:Y H:i:s');
             echo "    " . get_string_manager()->get_string('control_check_status_docprocessing', 'plagiarism_advacheck', $a, $CFG->lang) . PHP_EOL;
-            queue_log(
+            plagiarism_advacheck_queue_log(
                 $item->docidantplgt,
                 '',
                 10,
@@ -126,7 +126,7 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 'task\control_check_status_advacheck'
             );
             // If there was an error installing into the index, then we will install it into the index without requesting the results.
-            if ($item->status == ADVACHECK_ERROR_INDEX) {
+            if ($item->status == PLAGIARISM_ADVACHECK_ERROR_INDEX) {
                 $this->add_to_index($item);
                 continue;
             }
@@ -137,10 +137,10 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $a->error = $check_status->error;
                 $a->time = date('d:m:Y H:i:s');
                 echo "        " . get_string_manager()->get_string('control_check_status_getcheckstatuserror', 'plagiarism_advacheck', $a, $CFG->lang) . PHP_EOL . PHP_EOL;
-                $status = ADVACHECK_ERROR_GET_STATUS;
+                $status = PLAGIARISM_ADVACHECK_ERROR_GET_STATUS;
                 $DB->set_field('plagiarism_advacheck_docs', 'error', $check_status->error, ['id' => $item->id]);
                 $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $item->id]);
-                queue_log(
+                plagiarism_advacheck_queue_log(
                     $item->docidantplgt,
                     $item->reportedit,
                     14,
@@ -164,7 +164,7 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $a->time = date('d:m:Y H:i:s');
                 echo "       " . get_string_manager()->get_string('control_check_status_checkready', 'plagiarism_advacheck', $a, $CFG->lang) . PHP_EOL;
                 // Rounding values.
-                calc_orig($check_status->plagiarism, $check_status->legal, $check_status->selfcite, $orig);
+                plagiarism_advacheck_calc_orig($check_status->plagiarism, $check_status->legal, $check_status->selfcite, $orig);
                 $res->reportedit = $check_status->reportedit;
                 $res->reportread = $check_status->reportread;
                 $res->shortreport = $check_status->shortreport;
@@ -173,9 +173,9 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $res->legal = $check_status->legal;
                 $res->issuspicious = $check_status->issuspicious;
                 $res->selfcite = $check_status->selfcite;
-                $res->status = ADVACHECK_CHECKED;
+                $res->status = PLAGIARISM_ADVACHECK_CHECKED;
                 $DB->update_record('plagiarism_advacheck_docs', $res);
-                queue_log(
+                plagiarism_advacheck_queue_log(
                     $item->docidantplgt,
                     $check_status->reportedit,
                     5,
@@ -186,13 +186,13 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                     $item->userid,
                     $item->answerid,
                     $item->id,
-                    ADVACHECK_CHECKED,
+                    PLAGIARISM_ADVACHECK_CHECKED,
                     'task\control_check_status_advacheck'
                 );
                 $this->add_to_index($item);
 
                 // End of document processing.
-                queue_log(
+                plagiarism_advacheck_queue_log(
                     $item->docidantplgt,
                     $check_status->reportedit,
                     13,
@@ -212,10 +212,10 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $a->error = $check_status->msg;
                 $a->time = date('d:m:Y H:i:s');
                 echo "        " . get_string_manager()->get_string('control_check_status_checkerror', 'plagiarism_advacheck', $a, $CFG->lang) . PHP_EOL;
-                $status = ADVACHECK_ERROR_CHECK;
+                $status = PLAGIARISM_ADVACHECK_ERROR_CHECK;
                 $DB->set_field('plagiarism_advacheck_docs', 'error', $check_status->msg, ['id' => $item->id]);
                 $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $item->id]);
-                queue_log(
+                plagiarism_advacheck_queue_log(
                     $item->docidantplgt,
                     $item->reportedit,
                     14,
@@ -237,10 +237,10 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $a->time = date('d:m:Y H:i:s');
                 echo "        " . get_string_manager()->get_string('control_check_status_nostartcheck', 'plagiarism_advacheck', $a, $CFG->lang) . PHP_EOL;
                 $m = $this->api->start_check($docid);
-                $status = ADVACHECK_CHECKING;
+                $status = PLAGIARISM_ADVACHECK_CHECKING;
                 $DB->set_field('plagiarism_advacheck_docs', 'timecheck_start', time(), ['id' => $item->id]);
                 $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $item->id]);
-                queue_log(
+                plagiarism_advacheck_queue_log(
                     $item->docidantplgt,
                     '',
                     4,
@@ -260,10 +260,10 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                     $a->error = $m;
                     $a->time = date('d:m:Y H:i:s');
                     echo "        " . get_string_manager()->get_string('control_check_status_startcheckerror', 'plagiarism_advacheck', $a, $CFG->lang) . PHP_EOL;
-                    $status = ADVACHECK_ERROR_CHECKING;
+                    $status = PLAGIARISM_ADVACHECK_ERROR_CHECKING;
                     $DB->set_field('plagiarism_advacheck_docs', 'error', $m, ['id' => $item->id]);
                     $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $item->id]);
-                    queue_log(
+                    plagiarism_advacheck_queue_log(
                         $item->docidantplgt,
                         $item->reportedit,
                         14,
@@ -287,10 +287,10 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $a->time = date('d:m:Y H:i:s');
                 $m = get_string_manager()->get_string('control_check_status_checkingerror', 'plagiarism_advacheck', $a, $CFG->lang) . PHP_EOL;
                 echo "        " . $m . PHP_EOL;
-                $status = ADVACHECK_ERROR_CHECK;
+                $status = PLAGIARISM_ADVACHECK_ERROR_CHECK;
                 $DB->set_field('plagiarism_advacheck_docs', 'error', $m, ['id' => $item->id]);
                 $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $item->id]);
-                queue_log(
+                plagiarism_advacheck_queue_log(
                     $item->docidantplgt,
                     $item->reportedit,
                     14,
@@ -346,10 +346,10 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $a->error = $m;
                 $a->time = date('d:m:Y H:i:s');
                 echo "       " . get_string_manager()->get_string('control_check_status_addtoindexerror', 'plagiarism_advacheck', $a, $CFG->lang) . PHP_EOL;
-                $status = ADVACHECK_ERROR_INDEX;
+                $status = PLAGIARISM_ADVACHECK_ERROR_INDEX;
                 $DB->set_field('plagiarism_advacheck_docs', 'error', $m, ['id' => $doc->id]);
                 $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $doc->id]);
-                queue_log(
+                plagiarism_advacheck_queue_log(
                     $doc->docidantplgt,
                     $doc->reportedit,
                     14,
@@ -366,9 +366,9 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 );
                 return;
             }
-            $doc->status = ADVACHECK_ININDEX;
-            $DB->set_field('plagiarism_advacheck_docs', 'status', ADVACHECK_ININDEX, ['id' => $doc->id]);
-            queue_log(
+            $doc->status = PLAGIARISM_ADVACHECK_ININDEX;
+            $DB->set_field('plagiarism_advacheck_docs', 'status', PLAGIARISM_ADVACHECK_ININDEX, ['id' => $doc->id]);
+            plagiarism_advacheck_queue_log(
                 $doc->docidantplgt,
                 $doc->reportedit,
                 8,
@@ -379,7 +379,7 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $doc->userid,
                 $doc->answerid,
                 $doc->id,
-                ADVACHECK_ININDEX,
+                PLAGIARISM_ADVACHECK_ININDEX,
                 'task\control_check_status_advacheck'
             );
         }

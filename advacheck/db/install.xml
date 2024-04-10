@@ -86,7 +86,7 @@
                 <FIELD NAME="time_action_hr" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
                 <FIELD NAME="docidantplgt" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
                 <FIELD NAME="reportedit" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
-                <FIELD NAME="action_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT=""/>
+                <FIELD NAME="action" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT=""/>
                 <FIELD NAME="status" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT=""/>
                 <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT=""/>
                 <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT=""/>
@@ -100,7 +100,6 @@
             </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-                <KEY NAME="action_id" TYPE="foreign" FIELDS="action_id" REFTABLE="plagiarism_advacheck_action" REFFIELDS="id"/>
                 <KEY NAME="docid" TYPE="foreign" FIELDS="docid" REFTABLE="plagiarism_advacheck_docs" REFFIELDS="id"/>
                 <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
                 <KEY NAME="cmid" TYPE="foreign" FIELDS="cmid" REFTABLE="course_modules" REFFIELDS="id"/>
@@ -113,15 +112,6 @@
                 <INDEX NAME="answerid" UNIQUE="false" FIELDS="answerid"/>
                 <INDEX NAME="verifier_initiator" UNIQUE="false" FIELDS="verifier_initiator"/>
             </INDEXES>
-        </TABLE>
-        <TABLE NAME="plagiarism_advacheck_action" COMMENT="">
-            <FIELDS>
-                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-                <FIELD NAME="action_name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
-            </FIELDS>
-            <KEYS>
-                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-            </KEYS>
-        </TABLE>
+        </TABLE>        
     </TABLES>
 </XMLDB>

@@ -27,11 +27,16 @@ namespace plagiarism_advacheck\task;
 
 class clear_action_log extends \core\task\scheduled_task
 {
+    private $sm;
+    public function __construct()
+    {
+        $this->sm = get_string_manager();
+    }
 
     public function get_name()
     {
         global $CFG;
-        return get_string_manager()->get_string('clear_action_log', 'plagiarism_advacheck', null, $CFG->lang);
+        return $this->sm->get_string('clear_action_log', 'plagiarism_advacheck', null, $CFG->lang);
     }
 
     public function execute()
@@ -40,8 +45,9 @@ class clear_action_log extends \core\task\scheduled_task
         $store_action_time = get_config('plagiarism_advacheck', 'store_action_time');
         // Current time - (number of months) * (seconds in month).
         $time_store = time() - $store_action_time * 2592000;
-        $r = $DB->get_record_sql("SELECT COUNT(id) AS cnt FROM {plagiarism_advacheck_act_log} WHERE $time_store > time_action");
-        echo get_string_manager()->get_string('clear_action_log_cntrecfordel', 'plagiarism_advacheck', $r->cnt, $CFG->lang) . PHP_EOL;
+        $sql = "SELECT COUNT(id) AS cnt FROM {plagiarism_advacheck_act_log} WHERE ? > time_action";
+        $r = $DB->get_record_sql($sql, [$time_store]);
+        echo $this->sm->get_string('clear_action_log_cntrecfordel', 'plagiarism_advacheck', $r->cnt, $CFG->lang) . PHP_EOL;
         // We will delete all entries before the specified date.
         $DB->execute("DELETE FROM {plagiarism_advacheck_act_log} WHERE $time_store > time_action");
         return true;

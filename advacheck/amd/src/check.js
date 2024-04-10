@@ -24,7 +24,8 @@ define(['jquery', 'core/tree'], function ($) {
                     dataType: "html",
                     data: {
                         action: "update_report",
-                        typeid: typeid
+                        typeid: typeid,
+                        sesskey: M.cfg.sesskey
                     },
                     success: function (data) { app.setVerfyResult(data, typeid); },
                     error: function (request, status, error) {
@@ -59,13 +60,15 @@ define(['jquery', 'core/tree'], function ($) {
                         "assignment": $($(".advacheck-data." + typeid + " .assignment")[0]).text(),
                         "discussion": $($(".advacheck-data." + typeid + " .discussion")[0]).text(),
                         "userid": $($(".advacheck-data." + typeid + " .userid")[0]).text(),
-                        "content": $($(".advacheck-data." + typeid + " .content")[0]).text()
+                        "content": $($(".advacheck-data." + typeid + " .content")[0]).text(),
+                        "sesskey": M.cfg.sesskey
                     }
                 } else {
                     var params = {
                         "typeid": typeid,
                         "action": "checkfile",
-                        "courseid": courseid
+                        "courseid": courseid,
+                        "sesskey": M.cfg.sesskey
                     }
                 }
 
@@ -79,6 +82,7 @@ define(['jquery', 'core/tree'], function ($) {
 
                 $.ajax({
                     url: M.cfg.wwwroot + "/plagiarism/advacheck/ajax.php",
+                    sesskey: M.cfg.sesskey,
                     method: "POST",
                     dataType: "html",
                     cache: false,
@@ -108,7 +112,8 @@ define(['jquery', 'core/tree'], function ($) {
                 dataType: "html",
                 data: {
                     action: "update_report",
-                    typeid: typeid
+                    typeid: typeid,
+                    "sesskey": M.cfg.sesskey
                 },
                 success: function (data) { app.setVerfyResult(data, typeid) },
                 error: function (request, status, error) {
@@ -246,7 +251,8 @@ define(['jquery', 'core/tree'], function ($) {
                     login: login,
                     password: password,
                     soap_wsdl: soap_wsdl,
-                    uri: uri
+                    uri: uri,
+                    "sesskey": M.cfg.sesskey
                 };
                 $.ajax({
                     url: M.cfg.wwwroot + "/plagiarism/advacheck/ajax.php",
@@ -295,7 +301,8 @@ define(['jquery', 'core/tree'], function ($) {
                         action: "changetype",
                         cm: cm,
                         doctype: doctype,
-                        value: value
+                        value: value,
+                        "sesskey": M.cfg.sesskey
                     }
                 });
             });
@@ -309,7 +316,8 @@ define(['jquery', 'core/tree'], function ($) {
                     data: {
                         action: "changeMode",
                         cm: cm,
-                        mode: mode
+                        mode: mode,
+                        "sesskey": M.cfg.sesskey
                     }
                 });
             });

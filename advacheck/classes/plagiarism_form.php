@@ -280,7 +280,7 @@ class plagiarism_setup_form extends moodleform
             // The plugin cannot be used.
             $n .= $OUTPUT->notification(get_string('nosoapext', 'plagiarism_advacheck'), 'error');
             $soap_enabled = '0';
-            enable_plug(false, 0);
+            plagiarism_advacheck_enable_plug(false, 0);
         } else {
             $soap_enabled = '1';
         }
@@ -290,10 +290,10 @@ class plagiarism_setup_form extends moodleform
         switch ($this->tab) {
             case 'common':
                 if (($data = $this->get_data()) && confirm_sesskey()) {
-                    if (!isset ($data->enabled)) {
-                        enable_plug(false, 0);
+                    if (!isset($data->enabled)) {
+                        plagiarism_advacheck_enable_plug(false, 0);
                     } else {
-                        enable_plug(false, 1);
+                        plagiarism_advacheck_enable_plug(false, 1);
                     }
                     foreach ($data as $field => $value) {
                         // The "soap_enabled" field does not need to be written because this is a hidden helper field.
@@ -319,7 +319,7 @@ class plagiarism_setup_form extends moodleform
         } else {
             // Let's add it so it doesn't reset.
             $plagiarismsettings['soap_enabled'] = $soap_enabled;
-            if (!empty ($uri)) {
+            if (!empty($uri)) {
                 $plagiarismsettings['uri'] = $uri;
             }
         }

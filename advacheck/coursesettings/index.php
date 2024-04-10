@@ -22,8 +22,8 @@
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once('../../../config.php');
-require_once($CFG->dirroot . '/plagiarism/advacheck/lib.php');
+require_once ('../../../config.php');
+require_once ($CFG->dirroot . '/plagiarism/advacheck/lib.php');
 
 $id = optional_param('courseid', 0, PARAM_INT);
 $course = $DB->get_record('course', ['id' => $id], '*', MUST_EXIST);
@@ -35,7 +35,7 @@ if (!has_capability('plagiarism/advacheck:manage', $context)) {
     redirect(new moodle_url("/course/view.php", ['id' => $course->id]));
 }
 
-$antiplugiat_enable = enable_plug(true);
+$antiplugiat_enable = plagiarism_advacheck_enable_plug(true);
 if (!$antiplugiat_enable) {
     notice(get_string('notice1', 'plagiarism_advacheck'), new moodle_url("/course/view.php", ['id' => $course->id]));
 }
@@ -46,11 +46,8 @@ $PAGE->set_pagelayout('course');
 $modinfo = get_fast_modinfo($course);
 $mods = $modinfo->get_cms();
 
-$cmids = "";
-if ($cmids = array_keys($mods)) {
-    $cmids = "AND cmid IN (" . implode(",", $cmids) . ")";
-}
-$course_settings = $DB->get_records_sql("SELECT cmid, ac.* FROM {plagiarism_advacheck_course} as ac WHERE courseid = {$course->id} {$cmids}");
+$sql = "SELECT cmid, ac.* FROM {plagiarism_advacheck_course} as ac WHERE courseid = ?";
+$course_settings = $DB->get_records_sql($sql, [$course->id]);
 
 $table = new html_table();
 $table->head = [
@@ -120,13 +117,13 @@ foreach ($mods as $mod) {
     $manualmodeval = '';
     $disabledmodeval = '';
     switch ($mode) {
-        case ADVACHECK_DISABLEDMODE:
+        case PLAGIARISM_ADVACHECK_DISABLEDMODE:
             $disabledmodeval = 'checked';
             break;
-        case ADVACHECK_MANUALMODE:
+        case PLAGIARISM_ADVACHECK_MANUALMODE:
             $manualmodeval = 'checked';
             break;
-        case ADVACHECK_AUTOMODE:
+        case PLAGIARISM_ADVACHECK_AUTOMODE:
             $automodeval = 'checked';
             break;
         default:
@@ -140,7 +137,7 @@ foreach ($mods as $mod) {
             'type' => 'radio',
             'class' => 'changemode',
             'name' => $mod->id,
-            'value' => ADVACHECK_AUTOMODE,
+            'value' => PLAGIARISM_ADVACHECK_AUTOMODE,
             $automodeval => $automodeval
         ]
     );
@@ -150,7 +147,7 @@ foreach ($mods as $mod) {
             'type' => 'radio',
             'class' => 'changemode',
             'name' => $mod->id,
-            'value' => ADVACHECK_MANUALMODE,
+            'value' => PLAGIARISM_ADVACHECK_MANUALMODE,
             $manualmodeval => $manualmodeval
         ]
     );
@@ -160,7 +157,7 @@ foreach ($mods as $mod) {
             'type' => 'radio',
             'class' => 'changemode',
             'name' => $mod->id,
-            'value' => ADVACHECK_DISABLEDMODE,
+            'value' => PLAGIARISM_ADVACHECK_DISABLEDMODE,
             $disabledmodeval => $disabledmodeval
         ]
     );
@@ -188,7 +185,7 @@ foreach ($mods as $mod) {
     }
 
     $works_typesBox = html_writer::select(
-        $ADVACHECK_WORKS_TYPES,
+        $PLAGIARISM_ADVACHECK_WORKS_TYPES,
         'works_types',
         $works_types,
         false,

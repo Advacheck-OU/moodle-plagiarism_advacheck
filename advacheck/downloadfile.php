@@ -23,23 +23,23 @@
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require('../../config.php');
-require_once($CFG->libdir . '/filelib.php');
-require_once('locallib.php');
-require_once('constants.php');
+require ('../../config.php');
+require_once ($CFG->libdir . '/filelib.php');
+require_once ('locallib.php');
+require_once ('constants.php');
 
-require_login();
+require_course_login($SITE);
 
-$userid = required_param('userid', PARAM_RAW);
-$docid = required_param('docid', PARAM_RAW);
+$userid = required_param('userid', PARAM_INT);
+$docid = required_param('docid', PARAM_INT);
 
 $sql = "SELECT d.id, d.courseid, d.userid, d.docidantplgt, d.teacherid
         FROM {plagiarism_advacheck_docs} AS d
-        WHERE d.id = $docid";
-$d = $DB->get_record_sql($sql, null, IGNORE_MULTIPLE);
+        WHERE d.id = ?";
+$d = $DB->get_record_sql($sql, [$docid], IGNORE_MULTIPLE);
 
-$afio = get_autor_fio($userid);
-$vfio = get_verifier_fio($d->courseid, $d->teacherid);
+$afio = plagiarism_advacheck_get_autor_fio($userid);
+$vfio = plagiarism_advacheck_get_verifier_fio($d->courseid, $d->teacherid);
 
 $api = new plagiarism_advacheck\advacheck_api();
 $d = $DB->get_record('plagiarism_advacheck_docs', ['id' => $docid]);

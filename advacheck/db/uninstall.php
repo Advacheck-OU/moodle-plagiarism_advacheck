@@ -24,7 +24,7 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot . "/plagiarism/advacheck/lib.php");
+require_once ($CFG->dirroot . "/plagiarism/advacheck/lib.php");
 
 function xmldb_plagiarism_advacheck_uninstall()
 {
@@ -34,7 +34,6 @@ function xmldb_plagiarism_advacheck_uninstall()
     $DB->execute('DROP TABLE {plagiarism_advacheck_act_log}');
     $DB->execute('DROP TABLE {plagiarism_advacheck_docs}');
     $DB->execute('DROP TABLE {plagiarism_advacheck_action}');
-    delete_view();
     // Delete plugin settings.
     $DB->delete_records('config_plugins', ['plugin' => 'plagiarism']);
     $DB->delete_records('config_plugins', ['plugin' => 'plagiarism_advacheck']);

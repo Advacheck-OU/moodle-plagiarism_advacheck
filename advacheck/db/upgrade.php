@@ -41,8 +41,7 @@ function xmldb_plagiarism_advacheck_upgrade($oldversion)
     }
 
     if ($oldversion < 2024020902) {
-        // refresh view
-        add_log_view();
+
         // Define field id to be added to plagiarism_advacheck_docs.
         $table = new xmldb_table('plagiarism_advacheck_docs');
         $field = new xmldb_field('attemptnumber', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'type');
@@ -54,6 +53,50 @@ function xmldb_plagiarism_advacheck_upgrade($oldversion)
 
         // Apgtru savepoint reached.
         upgrade_plugin_savepoint(true, 2024020902, 'plagiarism', 'advacheck');
+    }
+
+    if ($oldversion < 2024040904) {
+        $table = new xmldb_table('plagiarism_advacheck_act_log');
+        $key = new xmldb_key('action_id', XMLDB_KEY_FOREIGN, ['action_id'], 'plagiarism_advacheck_action', ['id']);
+
+        // Launch drop key action_id.
+        $dbman->drop_key($table, $key);
+
+        $field = new xmldb_field('action_id', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'reportedit');
+        // Launch change of type for field action_id.
+        $dbman->change_field_type($table, $field);
+        // Launch rename field action_id.
+        $dbman->rename_field($table, $field, 'action');
+
+        // Define table plagiarism_advacheck_action to be dropped.
+        $table = new xmldb_table('plagiarism_advacheck_action');
+
+        // Conditionally launch drop table for plagiarism_advacheck_action.
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+        $table = new xmldb_table('plagiarism_advacheck_action_log');
+
+        if ($dbman->table_exists($table)) {
+            // Launch rename table for plagiarism_advacheck_act_log.
+            $dbman->rename_table($table, 'plagiarism_advacheck_act_log');
+        }
+
+        // If exist view plagiarism_advacheck_log_view, then delete it so that there are no errors in the DB/ 
+        if ($CFG->dbtype == 'sqlsrv') {
+            $sql = "SELECT OBJECT_ID('{plagiarism_advacheck_log_view}')AS exist";
+            $view = $DB->get_record_sql($sql);
+            if ($view->exist) {
+                $delete_view = "DROP VIEW {plagiarism_advacheck_log_view}";
+                $DB->execute($delete_view);
+            }
+        } else {
+            $delete_view = "DROP VIEW IF EXISTS {plagiarism_advacheck_log_view}";
+            $DB->execute($delete_view);
+        }
+
+        // Apgtru savepoint reached.
+        upgrade_plugin_savepoint(true, 2024040904, 'plagiarism', 'advacheck');
     }
 
     return true;

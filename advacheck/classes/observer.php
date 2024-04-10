@@ -30,8 +30,8 @@ use context;
 use context_course;
 
 defined('MOODLE_INTERNAL') || die();
-require_once("$CFG->dirroot/plagiarism/advacheck/constants.php");
-require_once("$CFG->dirroot/plagiarism/advacheck/locallib.php");
+require_once ("$CFG->dirroot/plagiarism/advacheck/constants.php");
+require_once ("$CFG->dirroot/plagiarism/advacheck/locallib.php");
 
 class observer
 {
@@ -62,8 +62,8 @@ class observer
         }
 
         // Let's delete previous editions.
-        self::delete_prev($event->component, 0, $event->objectid, $event->userid, ADVACHECK_QUIZ, $event->other['quizid']);
-        self::delete_prev($event->component, 0, $event->objectid, $event->userid, ADVACHECK_FILE, $event->other['quizid']);
+        self::delete_prev($event->component, 0, $event->objectid, $event->userid, PLAGIARISM_ADVACHECK_QUIZ, $event->other['quizid']);
+        self::delete_prev($event->component, 0, $event->objectid, $event->userid, PLAGIARISM_ADVACHECK_FILE, $event->other['quizid']);
         // Let's delete previous editions; the type of document is not important for the forum. delete_prev is called only once for it.
         // Let's get the course context.
         $context_course = context_course::instance($event->courseid, MUST_EXIST);
@@ -75,9 +75,9 @@ class observer
                 JOIN {question_attempts} qa ON qas.questionattemptid = qa.id
                 JOIN {question} q ON qa.questionid = q.id AND q.qtype = 'essay'
                 JOIN {quiz_attempts} att ON qa.questionusageid = att.uniqueid
-                WHERE att.id = $event->objectid AND qas.userid = $event->userid";
+                WHERE att.id = ? AND qas.userid = ?";
 
-            $essay_files = $DB->get_records_sql($sql);
+            $essay_files = $DB->get_records_sql($sql, [$event->objectid, $event->userid]);
             foreach ($essay_files as $ef) {
 
                 // We receive attachment files for the response.
@@ -92,11 +92,11 @@ class observer
                     // Let's check the length of the content in the file.
                     $content = $f->get_content();
                     if (mb_strlen($content) == 0) {
-                        // Add to the queue with the status - insufficient number of words ADVACHECK_LESSNWORDS.
+                        // Add to the queue with the status - insufficient number of words PLAGIARISM_ADVACHECK_LESSNWORDS.
                         self::add_to_queue(
-                            ADVACHECK_FILE,
+                            PLAGIARISM_ADVACHECK_FILE,
                             $f->get_id(),
-                            ADVACHECK_LESSNWORDS,
+                            PLAGIARISM_ADVACHECK_LESSNWORDS,
                             $ef->id,
                             0,
                             $f->get_userid(),
@@ -110,12 +110,12 @@ class observer
                     // Retrieving the file type.
                     $filetype = substr(strrchr($f->get_filename(), "."), 1) . ',';
                     // Checking the file extension.
-                    if (mb_strpos(ADVACHECK_ALLOW_FILE_TYPES, mb_strtolower($filetype)) === false) {
+                    if (mb_strpos(PLAGIARISM_ADVACHECK_ALLOW_FILE_TYPES, mb_strtolower($filetype)) === false) {
                         // Add to the queue with the status invalid file type.
                         self::add_to_queue(
-                            ADVACHECK_FILE,
+                            PLAGIARISM_ADVACHECK_FILE,
                             $f->get_id(),
-                            ADVACHECK_INVALIDFILETYPE,
+                            PLAGIARISM_ADVACHECK_INVALIDFILETYPE,
                             $ef->id,
                             0,
                             $f->get_userid(),
@@ -129,9 +129,9 @@ class observer
                     if (self::can_not_checked_by($context_course, $event->userid)) {
                         // Add to the queue with the status - no right to be verified.
                         self::add_to_queue(
-                            ADVACHECK_FILE,
+                            PLAGIARISM_ADVACHECK_FILE,
                             $f->get_id(),
-                            ADVACHECK_NORIGHTCHECKEDBY,
+                            PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                             $ef->id,
                             0,
                             $f->get_userid(),
@@ -144,9 +144,9 @@ class observer
                     }
                     // Add it to the queue with the status - awaiting unloading.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_WAITUPLOAD,
+                        PLAGIARISM_ADVACHECK_WAITUPLOAD,
                         $ef->id,
                         $event->timecreated,
                         $f->get_userid(),
@@ -170,17 +170,17 @@ class observer
                 JOIN {question_attempts} qa ON qas.questionattemptid = qa.id
                 JOIN {question} q ON qa.questionid = q.id AND q.qtype = 'essay'
                 JOIN {quiz_attempts} att ON qa.questionusageid = att.uniqueid
-                WHERE att.id = $event->objectid AND qas.userid = $event->userid";
-            $essay_texts = $DB->get_records_sql($sql);
+                WHERE att.id = ? AND qas.userid = ?";
+            $essay_texts = $DB->get_records_sql($sql, [$event->objectid, $event->userid]);
             foreach ($essay_texts as $et) {
                 // Let's take usa1-hash.
-                $hash = get_strip_text_content_hash($et->responsesummary);
+                $hash = plagiarism_advacheck_get_strip_text_content_hash($et->responsesummary);
                 if ($et->responsesummary == '') {
                     // Let's add it to the queue with the status - no right to be checked, so that the message Without checking (number of words <n) is not displayed.
                     self::add_to_queue(
-                        ADVACHECK_QUIZ,
+                        PLAGIARISM_ADVACHECK_QUIZ,
                         $hash,
-                        ADVACHECK_NORIGHTCHECKEDBY,
+                        PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                         $et->id,
                         0,
                         $event->userid,
@@ -195,9 +195,9 @@ class observer
                 if (self::can_not_checked_by($context_course, $event->userid)) {
                     // Add to the queue with the status - no right to be verified.
                     self::add_to_queue(
-                        ADVACHECK_QUIZ,
+                        PLAGIARISM_ADVACHECK_QUIZ,
                         $hash,
-                        ADVACHECK_NORIGHTCHECKEDBY,
+                        PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                         $et->id,
                         0,
                         $event->userid,
@@ -212,9 +212,9 @@ class observer
                 if (count_words(strip_tags($et->responsesummary)) < (int) $plugin_cfg->min_len_str) {
                     // Add to queue with status - insufficient number of words.
                     self::add_to_queue(
-                        ADVACHECK_QUIZ,
+                        PLAGIARISM_ADVACHECK_QUIZ,
                         $hash,
-                        ADVACHECK_LESSNWORDS,
+                        PLAGIARISM_ADVACHECK_LESSNWORDS,
                         $et->id,
                         0,
                         $event->userid,
@@ -227,9 +227,9 @@ class observer
                 }
                 // Add it to the queue with status 2 - awaiting unloading.
                 self::add_to_queue(
-                    ADVACHECK_QUIZ,
+                    PLAGIARISM_ADVACHECK_QUIZ,
                     $hash,
-                    ADVACHECK_WAITUPLOAD,
+                    PLAGIARISM_ADVACHECK_WAITUPLOAD,
                     $et->id,
                     $event->timecreated,
                     $event->userid,
@@ -272,7 +272,7 @@ class observer
         // We remembered how many times we checked the work for the files.
         $cf = $DB->get_record(
             'plagiarism_advacheck_docs',
-            ['cmid' => $event->contextinstanceid, 'userid' => $event->userid, 'doctype' => ADVACHECK_FILE],
+            ['cmid' => $event->contextinstanceid, 'userid' => $event->userid, 'doctype' => PLAGIARISM_ADVACHECK_FILE],
             'stud_check',
             IGNORE_MULTIPLE
         );
@@ -280,15 +280,15 @@ class observer
         // We remembered how many times we checked the work for the text.
         $ct = $DB->get_record(
             'plagiarism_advacheck_docs',
-            ['cmid' => $event->contextinstanceid, 'userid' => $event->userid, 'doctype' => ADVACHECK_WORKSHOP],
+            ['cmid' => $event->contextinstanceid, 'userid' => $event->userid, 'doctype' => PLAGIARISM_ADVACHECK_WORKSHOP],
             'stud_check',
             IGNORE_MULTIPLE
         );
         $ct = $ct ? $ct->stud_check : 0;
 
         // Let's delete previous editions.
-        self::delete_prev($event->component, 0, $event->objectid, $event->userid, ADVACHECK_WORKSHOP);
-        self::delete_prev($event->component, 0, $event->objectid, $event->userid, ADVACHECK_FILE);
+        self::delete_prev($event->component, 0, $event->objectid, $event->userid, PLAGIARISM_ADVACHECK_WORKSHOP);
+        self::delete_prev($event->component, 0, $event->objectid, $event->userid, PLAGIARISM_ADVACHECK_FILE);
         // Let's get the course context.
         $context_course = context_course::instance($event->courseid, MUST_EXIST);
 
@@ -306,11 +306,11 @@ class observer
                 // Let's check the length of the content in the file.
                 $content = $f->get_content();
                 if (mb_strlen($content) == 0) {
-                    // Add to the queue with the status - insufficient number of words ADVACHECK_LESSNWORDS.
+                    // Add to the queue with the status - insufficient number of words PLAGIARISM_ADVACHECK_LESSNWORDS.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_LESSNWORDS,
+                        PLAGIARISM_ADVACHECK_LESSNWORDS,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -325,12 +325,12 @@ class observer
                 // Retrieving the file type.
                 $filetype = substr(strrchr($f->get_filename(), "."), 1) . ',';
                 // Checking the file extension.
-                if (mb_strpos(ADVACHECK_ALLOW_FILE_TYPES, mb_strtolower($filetype)) === false) {
+                if (mb_strpos(PLAGIARISM_ADVACHECK_ALLOW_FILE_TYPES, mb_strtolower($filetype)) === false) {
                     // Add to the queue with the status invalid file type.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_INVALIDFILETYPE,
+                        PLAGIARISM_ADVACHECK_INVALIDFILETYPE,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -345,9 +345,9 @@ class observer
                 if (self::can_not_checked_by($context_course, $event->userid)) {
                     // Add to the queue with the status - no right to be verified.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_NORIGHTCHECKEDBY,
+                        PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -361,9 +361,9 @@ class observer
                 }
                 // Add it to the queue with the status - awaiting unloading.
                 self::add_to_queue(
-                    ADVACHECK_FILE,
+                    PLAGIARISM_ADVACHECK_FILE,
                     $f->get_id(),
-                    ADVACHECK_WAITUPLOAD,
+                    PLAGIARISM_ADVACHECK_WAITUPLOAD,
                     $event->objectid,
                     $event->timecreated,
                     $f->get_userid(),
@@ -394,14 +394,14 @@ class observer
             $event->contextinstanceid
         );
         // Let's take usa1-hash.
-        $hash = get_strip_text_content_hash($event->other['content']);
+        $hash = plagiarism_advacheck_get_strip_text_content_hash($event->other['content']);
         // Let's check whether this message (from a teacher or administrator) needs to be checked in the AP.
         if (self::can_not_checked_by($context_course, $event->userid)) {
             // Add to the queue with the status - no right to be verified.
             self::add_to_queue(
-                ADVACHECK_WORKSHOP,
+                PLAGIARISM_ADVACHECK_WORKSHOP,
                 $hash,
-                ADVACHECK_NORIGHTCHECKEDBY,
+                PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                 $event->objectid,
                 0,
                 $event->userid,
@@ -417,9 +417,9 @@ class observer
         if (count_words(strip_tags($event->other['content'])) < (int) $plugin_cfg->min_len_str) {
             // Add to queue with status - insufficient number of words.
             self::add_to_queue(
-                ADVACHECK_WORKSHOP,
+                PLAGIARISM_ADVACHECK_WORKSHOP,
                 $hash,
-                ADVACHECK_LESSNWORDS,
+                PLAGIARISM_ADVACHECK_LESSNWORDS,
                 $event->objectid,
                 0,
                 $event->userid,
@@ -433,9 +433,9 @@ class observer
         }
         // Add it to the queue with status 2 - awaiting unloading.
         self::add_to_queue(
-            ADVACHECK_WORKSHOP,
+            PLAGIARISM_ADVACHECK_WORKSHOP,
             $hash,
-            ADVACHECK_WAITUPLOAD,
+            PLAGIARISM_ADVACHECK_WAITUPLOAD,
             $event->objectid,
             $event->timecreated,
             $event->userid,
@@ -471,8 +471,8 @@ class observer
             return true;
         }
         // Let's delete previous editions.
-        self::delete_prev($event->component, $event->other['discussionid'], $event->objectid, $event->userid, ADVACHECK_FORUM);
-        self::delete_prev($event->component, $event->other['discussionid'], $event->objectid, $event->userid, ADVACHECK_FILE);
+        self::delete_prev($event->component, $event->other['discussionid'], $event->objectid, $event->userid, PLAGIARISM_ADVACHECK_FORUM);
+        self::delete_prev($event->component, $event->other['discussionid'], $event->objectid, $event->userid, PLAGIARISM_ADVACHECK_FILE);
         // Let's break down the context of the course.
         $context_course = context_course::instance($event->courseid, MUST_EXIST);
         // Let's request the modification date of the message; you can also use $event->timecreated, but it's better to take it from the message itself.
@@ -491,11 +491,11 @@ class observer
                 // Let's check the length of the content in the file.
                 $content = $f->get_content();
                 if (mb_strlen($content) == 0) {
-                    // Add to the queue with the status - insufficient number of words ADVACHECK_LESSNWORDS.
+                    // Add to the queue with the status - insufficient number of words PLAGIARISM_ADVACHECK_LESSNWORDS.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_LESSNWORDS,
+                        PLAGIARISM_ADVACHECK_LESSNWORDS,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -509,12 +509,12 @@ class observer
                 // Retrieving the file type.
                 $filetype = substr(strrchr($f->get_filename(), "."), 1) . ',';
                 // Check file extension.
-                if (mb_strpos(ADVACHECK_ALLOW_FILE_TYPES, mb_strtolower($filetype)) === false) {
+                if (mb_strpos(PLAGIARISM_ADVACHECK_ALLOW_FILE_TYPES, mb_strtolower($filetype)) === false) {
                     // Add to the queue with the status invalid file type.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_INVALIDFILETYPE,
+                        PLAGIARISM_ADVACHECK_INVALIDFILETYPE,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -528,9 +528,9 @@ class observer
                 if (self::can_not_checked_by($context_course, $event->userid)) {
                     // Add to the queue with the status - no right to be verified.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_NORIGHTCHECKEDBY,
+                        PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -543,9 +543,9 @@ class observer
                 }
                 // Add it to the queue with the status - awaiting unloading.
                 self::add_to_queue(
-                    ADVACHECK_FILE,
+                    PLAGIARISM_ADVACHECK_FILE,
                     $f->get_id(),
-                    ADVACHECK_WAITUPLOAD,
+                    PLAGIARISM_ADVACHECK_WAITUPLOAD,
                     $event->objectid,
                     $timepost,
                     $f->get_userid(),
@@ -565,14 +565,14 @@ class observer
             return true;
         }
         // Let's take usa1-hash.
-        $hash = get_strip_text_content_hash($event->other['content']);
+        $hash = plagiarism_advacheck_get_strip_text_content_hash($event->other['content']);
         // Let's check whether this message (from a teacher or administrator) needs to be checked in the AP.
         if (self::can_not_checked_by($context_course, $event->userid)) {
             // Add to the queue with the status - no right to be verified.
             self::add_to_queue(
-                ADVACHECK_FORUM,
+                PLAGIARISM_ADVACHECK_FORUM,
                 $hash,
-                ADVACHECK_NORIGHTCHECKEDBY,
+                PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                 $event->objectid,
                 0,
                 $event->userid,
@@ -587,9 +587,9 @@ class observer
         if (count_words(strip_tags($event->other['content'])) < (int) $plugin_cfg->min_len_str) {
             // Add to queue with status - insufficient number of words.
             self::add_to_queue(
-                ADVACHECK_FORUM,
+                PLAGIARISM_ADVACHECK_FORUM,
                 $hash,
-                ADVACHECK_LESSNWORDS,
+                PLAGIARISM_ADVACHECK_LESSNWORDS,
                 $event->objectid,
                 0,
                 $event->userid,
@@ -602,9 +602,9 @@ class observer
         }
         // Add it to the queue with status 2 - awaiting unloading.
         self::add_to_queue(
-            ADVACHECK_FORUM,
+            PLAGIARISM_ADVACHECK_FORUM,
             $hash,
-            ADVACHECK_WAITUPLOAD,
+            PLAGIARISM_ADVACHECK_WAITUPLOAD,
             $event->objectid,
             $timepost,
             $event->userid,
@@ -656,23 +656,23 @@ class observer
         // We remembered how many times the student checked the draft.
         $c = $DB->get_record(
             'plagiarism_advacheck_docs',
-            ['cmid' => $event->contextinstanceid, 'userid' => $event->userid, 'doctype' => ADVACHECK_ASSIGN],
+            ['cmid' => $event->contextinstanceid, 'userid' => $event->userid, 'doctype' => PLAGIARISM_ADVACHECK_ASSIGN],
             'stud_check',
             IGNORE_MULTIPLE
         );
         $c = $c ? $c->stud_check : 0;
 
         // Let's delete previous editions of the text response.
-        self::delete_prev($event->component, $ass_sub->assignment, $event->objectid, $event->userid, ADVACHECK_ASSIGN);
+        self::delete_prev($event->component, $ass_sub->assignment, $event->objectid, $event->userid, PLAGIARISM_ADVACHECK_ASSIGN);
         // Let's take a hash.
-        $hash = get_strip_text_content_hash($event->other['content']);
+        $hash = plagiarism_advacheck_get_strip_text_content_hash($event->other['content']);
         // Let's check whether this message (from a teacher or administrator) needs to be checked in the AP.
         if (self::can_not_checked_by($context_course, $event->userid)) {
             // Add to the queue with the status - no right to be verified.
             self::add_to_queue(
-                ADVACHECK_ASSIGN,
+                PLAGIARISM_ADVACHECK_ASSIGN,
                 $hash,
-                ADVACHECK_NORIGHTCHECKEDBY,
+                PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                 $event->objectid,
                 0,
                 $event->userid,
@@ -687,9 +687,9 @@ class observer
         if (count_words(strip_tags($event->other['content'])) < (int) $plugin_cfg->min_len_str) {
             // Add to queue with status - insufficient number of words.
             self::add_to_queue(
-                ADVACHECK_ASSIGN,
+                PLAGIARISM_ADVACHECK_ASSIGN,
                 $hash,
-                ADVACHECK_LESSNWORDS,
+                PLAGIARISM_ADVACHECK_LESSNWORDS,
                 $event->objectid,
                 0,
                 $event->userid,
@@ -702,9 +702,9 @@ class observer
         }
         // Add to queue with status 1 - waiting for response to be blocked.
         self::add_to_queue(
-            ADVACHECK_ASSIGN,
+            PLAGIARISM_ADVACHECK_ASSIGN,
             $hash,
-            ADVACHECK_WAITBLOCK,
+            PLAGIARISM_ADVACHECK_WAITBLOCK,
             $event->objectid,
             $ass_sub->timemodified,
             $event->userid,
@@ -750,13 +750,13 @@ class observer
         // We remembered how many times the student checked the draft.
         $c = $DB->get_record(
             'plagiarism_advacheck_docs',
-            ['cmid' => $event->contextinstanceid, 'userid' => $event->userid, 'doctype' => ADVACHECK_FILE],
+            ['cmid' => $event->contextinstanceid, 'userid' => $event->userid, 'doctype' => PLAGIARISM_ADVACHECK_FILE],
             'stud_check',
             IGNORE_MULTIPLE
         );
         $c = $c ? $c->stud_check : 0;
         // We will delete previous editions.
-        self::delete_prev($event->component, $ass_sub->assignment, $event->objectid, $event->userid, ADVACHECK_FILE);
+        self::delete_prev($event->component, $ass_sub->assignment, $event->objectid, $event->userid, PLAGIARISM_ADVACHECK_FILE);
         // If file checking is enabled.
         if (!empty($course_cfg->checkfile)) {
             // We look at the hashes of the paths to the downloaded files.
@@ -771,11 +771,11 @@ class observer
                 // Let's check the length of the content in the file.
                 $content = $f->get_content();
                 if (mb_strlen($content) == 0) {
-                    // Add to the queue with the status - insufficient number of words ADVACHECK_LESSNWORDS.
+                    // Add to the queue with the status - insufficient number of words PLAGIARISM_ADVACHECK_LESSNWORDS.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_LESSNWORDS,
+                        PLAGIARISM_ADVACHECK_LESSNWORDS,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -789,12 +789,12 @@ class observer
                 // Retrieving the file type.
                 $filetype = substr(strrchr($f->get_filename(), "."), 1) . ',';
                 // Check file extension.
-                if (mb_strpos(ADVACHECK_ALLOW_FILE_TYPES, mb_strtolower($filetype)) === false) {
+                if (mb_strpos(PLAGIARISM_ADVACHECK_ALLOW_FILE_TYPES, mb_strtolower($filetype)) === false) {
                     // Add to the queue with the status invalid file type.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_INVALIDFILETYPE,
+                        PLAGIARISM_ADVACHECK_INVALIDFILETYPE,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -808,9 +808,9 @@ class observer
                 if (self::can_not_checked_by($context_course, $event->userid)) {
                     // Add to the queue with the status - no right to be verified.
                     self::add_to_queue(
-                        ADVACHECK_FILE,
+                        PLAGIARISM_ADVACHECK_FILE,
                         $f->get_id(),
-                        ADVACHECK_NORIGHTCHECKEDBY,
+                        PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY,
                         $event->objectid,
                         0,
                         $f->get_userid(),
@@ -823,9 +823,9 @@ class observer
                 }
                 // Let's add it to the queue with the status - awaiting blocking.
                 self::add_to_queue(
-                    ADVACHECK_FILE,
+                    PLAGIARISM_ADVACHECK_FILE,
                     $f->get_id(),
-                    ADVACHECK_WAITBLOCK,
+                    PLAGIARISM_ADVACHECK_WAITBLOCK,
                     $event->objectid,
                     $ass_sub->timemodified,
                     $f->get_userid(),
@@ -880,12 +880,12 @@ class observer
         }
         // We change from “waiting for blocking” to “waiting for unloading” and indicate the status in the condition because students can check their draft.
         // We do this so that the teacher does not check an already verified answer.        
-        $cond = ['assignment' => $ass_sub->assignment, 'userid' => $event->userid, 'answerid' => $event->objectid, 'status' => ADVACHECK_WAITBLOCK];
+        $cond = ['assignment' => $ass_sub->assignment, 'userid' => $event->userid, 'answerid' => $event->objectid, 'status' => PLAGIARISM_ADVACHECK_WAITBLOCK];
 
         // Let's write down that they are waiting for loading.
-        $DB->set_field('plagiarism_advacheck_docs', 'status', ADVACHECK_WAITUPLOAD, $cond);
+        $DB->set_field('plagiarism_advacheck_docs', 'status', PLAGIARISM_ADVACHECK_WAITUPLOAD, $cond);
         // Because the status has already changed.
-        $cond['status'] = ADVACHECK_WAITUPLOAD;
+        $cond['status'] = PLAGIARISM_ADVACHECK_WAITUPLOAD;
         $DB->set_field('plagiarism_advacheck_docs', 'error', '', $cond);
     }
 
@@ -923,8 +923,8 @@ class observer
         $ass_sub = $DB->get_record_sql($sql, $cond, IGNORE_MULTIPLE);
 
         // If the documents were in the “awaiting blocking” status, then we do not change the status so that the teacher does not check an already verified answer.    
-        $conds = ['assignment' => $ass_sub->assignment, 'userid' => $event->relateduserid, 'cmid' => $event->contextinstanceid, 'status' => ADVACHECK_WAITBLOCK];
-        $DB->set_field('plagiarism_advacheck_docs', 'status', ADVACHECK_WAITUPLOAD, $conds);
+        $conds = ['assignment' => $ass_sub->assignment, 'userid' => $event->relateduserid, 'cmid' => $event->contextinstanceid, 'status' => PLAGIARISM_ADVACHECK_WAITBLOCK];
+        $DB->set_field('plagiarism_advacheck_docs', 'status', PLAGIARISM_ADVACHECK_WAITUPLOAD, $conds);
 
         // Under the specified conditions, both the response file and the response text are marked.
         $cond = ['assignment' => $ass_sub->assignment, 'userid' => $event->relateduserid, 'cmid' => $event->contextinstanceid];
@@ -966,7 +966,7 @@ class observer
         // Under the specified conditions, both the response file and the response text are marked.
         $cond = ['assignment' => $ass_sub->assignment, 'userid' => $event->relateduserid, 'cmid' => $event->contextinstanceid];
         // Let's write down what is waiting for blocking.
-        $DB->set_field('plagiarism_advacheck_docs', 'status', ADVACHECK_WAITBLOCK, $cond);
+        $DB->set_field('plagiarism_advacheck_docs', 'status', PLAGIARISM_ADVACHECK_WAITBLOCK, $cond);
         $DB->set_field('plagiarism_advacheck_docs', 'error', '', $cond);
     }
 
@@ -984,6 +984,8 @@ class observer
     private static function delete_prev($component, $compid, $objectid, $userid, $doctype, $quizid = 0)
     {
         global $DB;
+        $params = [];
+        $params[] = $objectid;
         if ($component == 'mod_forum') {
             // We took information about a message where the editing time is different from the creation time.
             $sql = "SELECT *
@@ -1008,18 +1010,20 @@ class observer
                         JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND (asd.name = 'attachments' OR asd.name = 'answer')
                         JOIN {question} q ON qa.questionid = q.id AND q.qtype = 'essay'
                         JOIN {quiz_attempts} quiza ON quiza.uniqueid = qa.questionusageid
-                        WHERE quiza.quiz = $quizid AND qas.userid = $userid ";
+                        WHERE quiza.quiz = ? AND qas.userid = ? ";
+            $params[] = $quizid;
+            $params[] = $userid;
         }
         // If the response was changed, then we will delete all entries from the queue with the ID of this message.
-        if ($DB->record_exists_sql($sql, [$objectid])) {
+        if ($DB->record_exists_sql($sql, $params)) {
             $cond['answerid'] = $objectid;
             $cond['userid'] = $userid;
             $cond['doctype'] = $doctype;
             // Let's take a document that needs to be removed from the index.
-            $doc = $DB->get_record('plagiarism_advacheck_docs', array_merge($cond, ['status' => ADVACHECK_ININDEX]));
+            $doc = $DB->get_record('plagiarism_advacheck_docs', array_merge($cond, ['status' => PLAGIARISM_ADVACHECK_ININDEX]));
 
             if ($doc) {
-                \remove_from_index($doc);
+                \plagiarism_advacheck_remove_from_index($doc);
             }
             $DB->delete_records('plagiarism_advacheck_docs', $cond);
         }
@@ -1067,8 +1071,8 @@ class observer
         $sql = "SELECT cm.id, cm.instance
             FROM {course_modules} cm
             JOIN {modules} m ON cm.module = m.id
-            WHERE cm.id = $cmid AND m.name = 'workshop'";
-        $cm_wokshop = $DB->get_record_sql($sql);
+            WHERE cm.id = ? AND m.name = 'workshop'";
+        $cm_wokshop = $DB->get_record_sql($sql, [$cmid]);
         if ($cm_wokshop) {
             $row['workshop'] = $cm_wokshop->instance;
         }
@@ -1078,16 +1082,16 @@ class observer
 
         $error = '';
         switch ($status) {
-            case ADVACHECK_INVALIDFILETYPE:
+            case PLAGIARISM_ADVACHECK_INVALIDFILETYPE:
                 $error = '-';
                 break;
-            case ADVACHECK_NORIGHTCHECKEDBY:
+            case PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY:
                 $error = "";
                 break;
-            case ADVACHECK_WAITBLOCK:
+            case PLAGIARISM_ADVACHECK_WAITBLOCK:
                 $error = '';
                 break;
-            case ADVACHECK_LESSNWORDS:
+            case PLAGIARISM_ADVACHECK_LESSNWORDS:
                 $error = get_string('min_len_str_info', 'plagiarism_advacheck', get_config('plagiarism_advacheck', 'min_len_str'));
                 break;
         }

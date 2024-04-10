@@ -105,7 +105,7 @@ class advacheck_api
     {
         // Retrieving the course teacher ID to look up the User ID record.
         if (!$auto) {
-            $t = get_teacher_from_cournseid($courseid, $auto);
+            $t = plagiarism_advacheck_get_teacher_from_cournseid($courseid, $auto);
         } else {
             $t = new \stdClass();
             $t->id = $auto;
@@ -117,7 +117,7 @@ class advacheck_api
             "FileName" => basename($filepath),
             "FileType" => "." . substr(strrchr($filepath, "."), 1),
             "ExternalUserID" => $t->id,
-            "DeveloperID" => DeveloperID,
+            "DeveloperID" => PLAGIARISM_ADVACHECK_DEVELOPERID,
         ];
         // Uploading a file.
         try {
