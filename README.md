@@ -1,7 +1,6 @@
 Take advantage of Advacheck’s plagiarism checker from the comfort of your Moodle LMS.
 The Advacheck plugin for Moodle allows educators to seamlessly submit student responses from assignments, forums, tests, or lectures for plagiarism review. Checks can be performed manually as needed or set to run automatically. You can quickly view a summary of the plagiarism check results alongside the student’s response in the course element and access a link to the full report for in-depth analysis.
 
-
 **IMPORTANT NOTICE**:
 To utilize the Advacheck plagiarism checker plugin, an active account on Advacheck.com is required.
 To use the basic functionality of the Advacheck plagiarism checker service, a commercial subscription is required.
@@ -10,12 +9,15 @@ The default connection settings are configured for the demo version.
 
 ### INSTALLING
 There are no special system requirements for this plugin, but the performance of the current version was tested on Moodle 3.9 in the minimum configuration (PHP 7.3 + MySQL 5.6 or PostgreSQL 9.5), the correct operation of the plugin on lower versions of software is not guaranteed.
+
+------------
+
 WARNING:
 Prior to installing this plugin, please make sure that the Moodle user has the right to create views within the Moodle database. Lack of this permission could lead to installation errors and issues during plugin operation. It is essential to add these permissions if they are not already in place.
 
 ------------
 
-After setting permissions in the database for the moodle user, the plugin can be installed in the standard way (via CLI or from a zip file).
+After setting permissions in the database for the moodle user, the plugin can be installed in the usual way (via CLI or from a zip file).
 
 After installing the plugin, make sure that enableplagiarism parameter is enabled in moodle settings (Administration - Advanced features - Enable plagiarism plugins).
 
