@@ -2,9 +2,8 @@ Take advantage of Advacheck’s plagiarism checker from the comfort of your Mood
 The Advacheck plugin for Moodle allows educators to seamlessly submit student responses from assignments, forums, tests, or lectures for plagiarism review. Checks can be performed manually as needed or set to run automatically. You can quickly view a summary of the plagiarism check results alongside the student’s response in the course element and access a link to the full report for in-depth analysis.
 
 **IMPORTANT NOTICE**:
-To utilize the Advacheck plagiarism checker plugin, an active account on Advacheck.com is required.
-To use the basic functionality of the Advacheck plagiarism checker service, a commercial subscription is required.
-Please [contact us](https://advacheck.com/contacts/) to obtain an account.
+To utilize the Advacheck plugin, you must have an active account on Advacheck.com which requires a commercial subscription. 
+Please [contact us](https://advacheck.com/contacts/) to set up an account.
 The default connection settings are configured for the demo version.
 
 ### INSTALLING
@@ -17,11 +16,11 @@ Prior to installing this plugin, please make sure that the Moodle user has the r
 
 ------------
 
-After setting permissions in the database for the moodle user, the plugin can be installed in the usual way (via CLI or from a zip file).
+After setting permissions in the database for the Moodle user, the plugin can be installed in the usual way (via CLI or from a zip file).
 
-After installing the plugin, make sure that enableplagiarism parameter is enabled in moodle settings (Administration - Advanced features - Enable plagiarism plugins).
+After installing the plugin, make sure that enableplagiarism parameter is enabled in Moodle settings (Administration - Advanced features - Enable plagiarism plugins).
 
-Then go to Administration - Plugins - Plagiarism - Moodle-Antiplagiat Module and enable our plugin (check Enable the Moodle-Antiplagiat Module).
+Then go to Administration - Plugins - Plagiarism - Moodle-Advacheck Module and enable our plugin (check Enable the Moodle-Advacheck Module).
 
 After that you can configure the plugin according to the credentials obtained on [our site](https://advacheck.com) or activate the test connection by setting the default settings.
 Detailed instructions for configuring the plugin are available on [our website](https://manual.advacheck.com/main/docs/advacheck_plugin_documentation.pdf#%5B%7B%22num%22%3A32%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C33%2C805%2C0%5D).
