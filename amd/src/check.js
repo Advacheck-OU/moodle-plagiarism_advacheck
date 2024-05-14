@@ -4,11 +4,6 @@ define(['jquery', 'core/tree'], function ($) {
         processingDocs: [],
         addPlagiarismCtrlButtons: function () {
             var app = this;
-            $(document).ready(function () {
-                // For "chechking status" display progress circle
-                $(".checking_img").css("display", "inline");
-                return false;
-            });
             // Update verify report 
             $(document).on('click', '.update_report', function () {
                 var typeid = $($(".typeid", $(this).parent())[0]).text();
@@ -76,7 +71,7 @@ define(['jquery', 'core/tree'], function ($) {
                 // Hide the button
                 $(".advacheck-checkbtn." + typeid).hide();
                 // Show the loader img
-                $(".advacheck-loader." + typeid).show();
+                $(".advacheck-loader." + typeid).removeClass("advacheck-hidden");
                 $(".advacheck-data.advacheck-green.checking." + typeid).css("display", "inline-grid");
                 $(".advacheck-data.advacheck-green.checking." + typeid).show();
 
@@ -140,7 +135,7 @@ define(['jquery', 'core/tree'], function ($) {
 
                 if (data.status == 4 || data.status == 5) {
                     // Hide progress circle
-                    $(".advacheck-loader." + typeid).hide();
+                    $(".advacheck-loader." + typeid).addClass("advacheck-hidden");
                     $(".advacheck-data.advacheck-green.checking." + typeid).hide();
                     // Hide info block
                     $(".check_notice-" + typeid).hide();
@@ -184,14 +179,6 @@ define(['jquery', 'core/tree'], function ($) {
                         // Change background color 
                         $(".advacheck." + typeid).attr("class", "advacheck " + typeid + " " + data.class);
                     }
-                    // Display and add style to verify result.
-                    $(".advacheck." + typeid).css("display", "inline-block");
-                    $(".advacheck." + typeid).css("-webkit-border-radius", "4px");
-                    $(".advacheck." + typeid).css("-moz-border-radius", "4px");
-                    $(".advacheck." + typeid).css("border-radius", "4px");
-                    $(".advacheck." + typeid).css("padding", "3px 7px");
-                    $(".advacheck." + typeid).css("font-size", "80%");
-                    $(".advacheck." + typeid).css("line-height", "110%");
                     $(".advacheck." + typeid).show();
                     // If started a cycle of waiting for results on this document. Stop cycle.
                     if (this.verifyStatus[typeid]) {
@@ -222,7 +209,7 @@ define(['jquery', 'core/tree'], function ($) {
                 // If there is an error, see the console.
                 // Let's put the check button back.
                 $(".advacheck-checkbtn." + typeid).show();
-                $(".advacheck-loader." + typeid).hide();
+                $(".advacheck-loader." + typeid).addClass("advacheck-hidden");
                 // We will display an error message.
                 $(".advacheck." + typeid).html(data.error).show();
                 console.log(e.message);

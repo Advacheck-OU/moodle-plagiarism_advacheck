@@ -1153,7 +1153,7 @@ function plagiarism_advacheck_update_advacheck_report($typeid)
     global $DB, $USER;
     $plugin_cfg = get_config('plagiarism_advacheck');
     $sql = "SELECT * FROM {plagiarism_advacheck_docs} WHERE typeid = ?";
-    $data = $DB->get_record_sql($sql, [$typeid]);
+    $data = $DB->get_record('plagiarism_advacheck_docs', ['typeid' => $typeid]);
     $result = new stdClass();
     $result->status = $DB->get_field('plagiarism_advacheck_docs', 'status', ['id' => $data->id]);
     $docid = unserialize($data->docidantplgt);
@@ -1516,13 +1516,59 @@ function plagiarism_advacheck_queue_log(
 
     $m = $sm->get_string('action_log_cmsettings', 'plagiarism_advacheck', $a, $CFG->lang);
 
+    $action_str = '';
+    switch ($action_id) {
+        case 1:
+            $action_str = $sm->get_string("action_add_to_queue", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 2:
+            $action_str = $sm->get_string("action_start_download", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 3:
+            $action_str = $sm->get_string("action_end_download", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 4:
+            $action_str = $sm->get_string("action_start_check", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 5:
+            $action_str = $sm->get_string("action_verification_start", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 6:
+            $action_str = $sm->get_string("action_start_removing_from_index", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 7:
+            $action_str = $sm->get_string("action_end_deleting_from_index", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 8:
+            $action_str = $sm->get_string("action_add_to_index", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 9:
+            $action_str = $sm->get_string("action_result_updated", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 10:
+            $action_str = $sm->get_string("action_start_doc_processing", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 11:
+            $action_str = $sm->get_string("action_start_loading_doc_fields", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 12:
+            $action_str = $sm->get_string("action_end_loading_doc_fields", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 13:
+            $action_str = $sm->get_string("action_end_doc_processing", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+        case 14:
+            $action_str = $sm->get_string("action_error_received", 'plagiarism_advacheck', null, $CFG->lang);
+            break;
+    }
+
     $row['docid'] = $docid;
     $row['docidantplgt'] = empty($docidantplgt) ? '' : $docidantplgt;
     $row['reportedit'] = $reportedit;
     $row['time_action'] = $mt;
     $row['time_action_hr'] = date('d-m-Y H:i:s', $mt_int) . ".$k[1]";
     $row['status'] = $status;
-    $row['action'] = $sm->get_string("action$action_id", 'plagiarism_advacheck', null, $CFG->lang);
+    $row['action'] = $action_str;
     $row['courseid'] = $courseid;
     $row['cmid'] = $cmid;
     $row['assignment'] = $assignment;
@@ -1998,14 +2044,7 @@ function plagiarism_advacheck_add_to_queue_file($files, $inst, $modname, $crs_ct
 function plagiarism_advacheck_get_autor_fio($userid)
 {
     global $DB;
-
-    $sql = "SELECT
-        u.id,
-        u.lastname,
-        u.firstname
-        FROM {user} AS u WHERE u.id = ?";
-
-    $u = $DB->get_record_sql($sql, [$userid]);
+    $u = $DB->get_record('user', ['id' => $userid], 'id, lastname, firstname');
     $afio = "$u->lastname $u->firstname";
     return $afio;
 }
@@ -2025,13 +2064,7 @@ function plagiarism_advacheck_get_verifier_fio($courseid, $uid = null)
     $vfio = '';
 
     if (isset($uid)) {
-        $sql = "SELECT
-        u.id,
-        u.lastname,
-        u.firstname
-        FROM {user} AS u WHERE u.id = ?";
-        $t = $DB->get_record_sql($sql, [$uid]);
-
+        $t = $DB->get_record('user', ['id' => $uid], 'id, lastname, firstname');
         $vfio = "$t->lastname $t->firstname";
     } else {
         $sql = "SELECT u.id,

@@ -33,7 +33,7 @@ define('PLAGIARISM_ADVACHECK_MANUALMODE', 1);
 // 0 - Disable the DISABLED check.
 define('PLAGIARISM_ADVACHECK_DISABLEDMODE', 0);
 // The upload help option. Not all brands have this option.
-define('VIEW_CERTIFICATE', 0);
+define('PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE', 0);
 // To check before unloading.
 // Allowed file types
 $PLAGIARISM_ADVACHECK_ALLOW_FILE_TYPES = get_config('plagiarism_advacheck', 'allow_file_types') . ',';

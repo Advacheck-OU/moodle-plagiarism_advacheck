@@ -174,10 +174,13 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
         }
 
         $AND = '';
+        $paramssql = [$doctype, $typeid, $userid];
         if ($discussion != 0) {
-            $AND = " AND discussion = $discussion ";
+            $AND = " AND discussion =  ? ";
+            $paramssql[] = $discussion;
         } else if ($assignment != 0) {
-            $AND = " AND assignment = $assignment ";
+            $AND = " AND assignment = ? ";
+            $paramssql[] = $assignment;
         }
 
         // Request to receive test results.
@@ -189,7 +192,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 AND userid = ?
                 $AND
                 ORDER BY timeadded";
-        $data = $DB->get_record_sql($sql, [$doctype, $typeid, $userid], IGNORE_MULTIPLE);
+        $data = $DB->get_record_sql($sql, $paramssql, IGNORE_MULTIPLE);
 
         // If we have results with a hash that was calculated with the old algorithm.
         if (!$data && isset($content)) {
@@ -208,7 +211,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 case PLAGIARISM_ADVACHECK_WAITBLOCK:
                     if ($checkcap) {
                         // If Require students to click the submit button.
-                        $submissiondrafts = $DB->get_record('assign', ['id' => $assignment], 'submissiondrafts')->submissiondrafts;
+                        $submissiondrafts = $DB->get_field('assign', 'submissiondrafts', ['id' => $assignment]);
                         if ($submissiondrafts) {
                             // Info for the teacher: the student must submit an answer for verification.
                             $msg = get_string('wait_block1', 'plagiarism_advacheck');
@@ -321,17 +324,9 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                     break;
                 // The document is in the process of being reviewed.
                 case PLAGIARISM_ADVACHECK_CHECKING:
-                    $output = html_writer::span(
-                        get_string('checking', 'plagiarism_advacheck'),
-                        'advacheck-green',
-                        ['style' => 'display: inline-grid; font-size: 80%;']
-                    );
+                    $output = html_writer::span(get_string('checking', 'plagiarism_advacheck'), 'advacheck-green');
                     // Animation of the verification process.
-                    $output .= html_writer::img(
-                        plagiarism_advacheck_get_icn_advacheck('loader'),
-                        get_string('checking', 'plagiarism_advacheck'),
-                        ['class' => 'advacheck-loader checking_img', 'style' => 'width: 20px;']
-                    );
+                    $output .= html_writer::img(plagiarism_advacheck_get_icn_advacheck('loader'), get_string('checking', 'plagiarism_advacheck'), ['class' => 'advacheck-loader']);
                     break;
                 // Insufficient number of words.
                 case PLAGIARISM_ADVACHECK_LESSNWORDS:
@@ -503,7 +498,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
         // For the html icon "Upload help".
         $download_btn = '';
         // If there is an “upload certificate” option for this brand.
-        if (VIEW_CERTIFICATE) {
+        if (PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE) {
             $alt = get_string('downloadreport', 'plagiarism_advacheck');
             $download = html_writer::img(plagiarism_advacheck_get_icn_advacheck('download'), $alt);
             $download_lnk = new moodle_url("/plagiarism/advacheck/downloadfile.php", ['userid' => $data->userid, 'docid' => $data->id]);
@@ -650,7 +645,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
             // For the html icon "Upload help".
             $download_btn = '';
             // If there is an “upload certificate” option for this brand.
-            if (VIEW_CERTIFICATE) {
+            if (PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE) {
                 $alt = get_string('downloadreport', 'plagiarism_advacheck');
                 $download = html_writer::img(plagiarism_advacheck_get_icn_advacheck('download'), $alt);
                 $download_lnk = new moodle_url("/plagiarism/advacheck/downloadfile.php", ['userid' => $userid, 'docid' => $docid]);
@@ -675,10 +670,10 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 $suspicious_img,
                 ['title' => get_string('suspicious', 'plagiarism_advacheck'), 'class' => "advacheck-suspicious_lnk $typeid", 'target' => '_blank']
             );
-            $suspicious_html = html_writer::span($suspicious_link, "advacheck-suspicious-$typeid advacheck-hidden", ['style' => 'display:none']);
+            $suspicious_html = html_writer::span($suspicious_link, "advacheck-suspicious-$typeid advacheck-hidden");
             // Blank with a percentage of originality, hidden style.
             $res = html_writer::div($plag_html . ' ' . $selfcite_html . ' ' . $legal_html . ' ' . $orig_html . " " . $report . ' '
-                . $update_report_div . ' ' . $download_btn . ' ' . $suspicious_html, "advacheck $typeid advacheck-hidden", ['style' => "display:none"]);
+                . $update_report_div . ' ' . $download_btn . ' ' . $suspicious_html, "advacheck $typeid advacheck-hidden");
 
             $help = html_writer::span($OUTPUT->help_icon('checkresult', 'plagiarism_advacheck'), "advacheck_help $typeid");
             // Let's clear the content from tags in order to add it to the page in a hidden form, so that when the button is clicked, it is sent for verification.
@@ -698,14 +693,10 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                     "advacheck-data $typeid"
                 ) .
                 html_writer::span(get_string('checking', 'plagiarism_advacheck'), "advacheck-data advacheck-green checking $typeid") .
-                html_writer::img(
-                    plagiarism_advacheck_get_icn_advacheck('loader'),
-                    get_string('checking', 'plagiarism_advacheck'),
-                    ['class' => "advacheck-loader $typeid advacheck-hidden", 'style' => "display:none; width: 20px;"]
-                ) .
+                html_writer::img(plagiarism_advacheck_get_icn_advacheck('loader'), get_string('checking', 'plagiarism_advacheck'), ['class' => "advacheck-loader $typeid advacheck-hidden"]) .
                 $res . $help .
                 $checkBtn,
-                "advacheck $typeid"
+                "advacheck "
             );
         }
         return $output;
@@ -943,11 +934,9 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
         if (!empty($data->advacheck_mode)) {
             $modcontext = context_module::instance($cmid);
             if ($modulename == 'forum') {
-                $sql = "SELECT COUNT(id) AS cnt FROM {forum_discussions} fd WHERE fd.forum = ?";
-                $posts = $DB->get_record_sql($sql, [$instance]);
-                $sql = "SELECT COUNT(id) AS cnt FROM {plagiarism_advacheck_docs} d WHERE d.cmid = ?";
-                $docs = $DB->get_record_sql($sql, [$cmid]);
-                if ($posts->cnt != $docs->cnt) {
+                $postscnt = $DB->count_records('forum_discussions', ['forum' => $instance]);
+                $docscnt = $DB->count_records('plagiarism_advacheck_docs', ['cmid' => $cmid]);
+                if ($postscnt != $docscnt) {
                     unset($posts);
                     $sql = "SELECT
                     fp.id,

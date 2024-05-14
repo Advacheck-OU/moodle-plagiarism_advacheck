@@ -27,9 +27,9 @@ require_once (__DIR__ . '/../../config.php');
 require_once ($CFG->libdir . '/adminlib.php');
 require_once ($CFG->libdir . '/plagiarismlib.php');
 require_once ($CFG->dirroot . '/plagiarism/advacheck/lib.php');
-require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/plagiarism_form.php');
+require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/settings_form.php');
 
-require_course_login($SITE);
+require_login($SITE, false);
 
 admin_externalpage_setup('plagiarismadvacheck');
 
@@ -47,7 +47,7 @@ $tabs[] = $row;
 $customdata = new stdClass();
 $customdata->tab = 'common';
 $url_form = new moodle_url('/plagiarism/advacheck/settings.php', ['tab' => 'common']);
-$mform = new plagiarism_setup_form($url_form, $customdata);
+$mform = new plagiarism_advacheck_settings_form($url_form, $customdata);
 
 $notice = false;
 

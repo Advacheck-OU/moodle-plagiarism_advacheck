@@ -49,7 +49,7 @@ class clear_action_log extends \core\task\scheduled_task
         $r = $DB->get_record_sql($sql, [$time_store]);
         echo $this->sm->get_string('clear_action_log_cntrecfordel', 'plagiarism_advacheck', $r->cnt, $CFG->lang) . PHP_EOL;
         // We will delete all entries before the specified date.
-        $DB->execute("DELETE FROM {plagiarism_advacheck_act_log} WHERE $time_store > time_action");
+        $DB->execute("DELETE FROM {plagiarism_advacheck_act_log} WHERE ? > time_action", [$time_store]);
         return true;
     }
 

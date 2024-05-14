@@ -33,7 +33,7 @@ $action = optional_param('action', '', PARAM_TEXT);
 $type = optional_param('doctype', '', PARAM_TEXT);
 $typeid = optional_param('typeid', 0, PARAM_TEXT);
 
-$courseid = optional_param('courseid', 0, PARAM_INT);
+$courseid = optional_param('courseid', 1, PARAM_INT);
 $content = optional_param('content', '', PARAM_TEXT);
 $doctype = optional_param('doctype', '', PARAM_TEXT);
 
@@ -41,7 +41,8 @@ $assignment = optional_param("assignment", 0, PARAM_INT);
 $discussion = optional_param("discussion", 0, PARAM_INT);
 $userid = optional_param("userid", 0, PARAM_INT);
 
-require_course_login($SITE);
+$course = $DB->get_record('course', ['id' => $courseid]);
+require_login($course, false);
 
 if (!confirm_sesskey()) {
     throw new \moodle_exception('confirmsesskeybad');
@@ -65,7 +66,7 @@ if (($action == "checktext") && !empty($typeid) && !empty($content)) {
 if ($action == "changeMode") {
     $cm = optional_param('cm', 0, PARAM_INT);
     $mode = optional_param('mode', PLAGIARISM_ADVACHECK_DISABLEDMODE, PARAM_INT);
-    $course = $DB->get_field_sql("SELECT course FROM {course_modules} WHERE id = ?", [$cm]);
+    $course = $DB->get_field('course_modules', 'course', ['id' => $cm]);
     if ($cm && $course) {
         if ($DB->record_exists('plagiarism_advacheck_course', ['courseid' => $course, 'cmid' => $cm])) {
             $DB->set_field('plagiarism_advacheck_course', 'mode', $mode, ['courseid' => $course, 'cmid' => $cm]);
@@ -84,7 +85,7 @@ if ($action == "changetype") {
     $cm = optional_param('cm', 0, PARAM_INT);
     $type = optional_param('doctype', '', PARAM_TEXT);
     $value = optional_param('value', 0, PARAM_TEXT);
-    $course = $DB->get_field_sql("SELECT course FROM {course_modules} WHERE id = ?", [$cm]);
+    $course = $DB->get_field('course_modules', 'course', ['id' => $cm]);
     if ($cm && $course && $type) {
         if ($DB->record_exists('plagiarism_advacheck_course', ['courseid' => $course, 'cmid' => $cm])) {
             $DB->set_field('plagiarism_advacheck_course', $type, $value, ['courseid' => $course, 'cmid' => $cm]);

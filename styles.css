@@ -29,7 +29,8 @@
 }
 
 .advacheck-loader {
-    display: none;
+    width: 20px;
+    display: inline;
 }
 
 .advacheck-hidden {

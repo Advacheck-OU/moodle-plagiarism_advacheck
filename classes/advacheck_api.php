@@ -295,7 +295,8 @@ class advacheck_api
         global $USER;
         try {
             $vopt = ['Author' => $author, 'Verifier' => $verifier];
-            $lang = ['Language' => $USER->lang];
+            $l = empty($USER->lang) ? 'en' : $USER->lang;
+            $lang = ['Language' => $l];
             $pdf = $this->client->GetVerificationReport(["docId" => $docid, "options" => $vopt, 'formattingOptions' => $lang]);
             return $pdf;
         } catch (\SoapFault $e) {

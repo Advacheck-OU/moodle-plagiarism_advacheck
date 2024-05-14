@@ -28,21 +28,18 @@ require_once ($CFG->libdir . '/filelib.php');
 require_once ('locallib.php');
 require_once ('constants.php');
 
-require_course_login($SITE);
-
 $userid = required_param('userid', PARAM_INT);
 $docid = required_param('docid', PARAM_INT);
 
-$sql = "SELECT d.id, d.courseid, d.userid, d.docidantplgt, d.teacherid
-        FROM {plagiarism_advacheck_docs} AS d
-        WHERE d.id = ?";
-$d = $DB->get_record_sql($sql, [$docid], IGNORE_MULTIPLE);
+$fields = 'id, courseid, userid, docidantplgt, teacherid';
+$d = $DB->get_record('plagiarism_advacheck_docs', ['id' => $docid], $fields, IGNORE_MULTIPLE);
+$course = $DB->get_record('course', ['id' => $d->courseid]);
+require_login($course, false);
 
 $afio = plagiarism_advacheck_get_autor_fio($userid);
 $vfio = plagiarism_advacheck_get_verifier_fio($d->courseid, $d->teacherid);
 
 $api = new plagiarism_advacheck\advacheck_api();
-$d = $DB->get_record('plagiarism_advacheck_docs', ['id' => $docid]);
 $pdf = $api->get_verification_report(unserialize($d->docidantplgt), $afio, $vfio);
 
 if (is_string($pdf)) {
