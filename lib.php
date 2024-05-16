@@ -214,10 +214,10 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                         $submissiondrafts = $DB->get_field('assign', 'submissiondrafts', ['id' => $assignment]);
                         if ($submissiondrafts) {
                             // Info for the teacher: the student must submit an answer for verification.
-                            $msg = get_string('wait_block1', 'plagiarism_advacheck');
+                            $msg = get_string('wait_block_submissiondrafts_yes', 'plagiarism_advacheck');
                         } else {
                             // For the teacher: You should be prohibited from changing the answer.
-                            $msg = get_string('wait_block2', 'plagiarism_advacheck');
+                            $msg = get_string('wait_block_submissiondrafts_no', 'plagiarism_advacheck');
                         }
                         $output = plagiarism_advacheck_get_html_block_info($msg, 'advacheck-blue');
                     } else {

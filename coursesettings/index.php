@@ -37,7 +37,7 @@ if (!has_capability('plagiarism/advacheck:manage', $context)) {
 
 $antiplugiat_enable = plagiarism_advacheck_enable_plug(true);
 if (!$antiplugiat_enable) {
-    notice(get_string('notice1', 'plagiarism_advacheck'), new moodle_url("/course/view.php", ['id' => $course->id]));
+    notice(get_string('notice_plug_disable', 'plagiarism_advacheck'), new moodle_url("/course/view.php", ['id' => $course->id]));
 }
 
 $PAGE->set_url('/plagiarism/advacheck/coursesettings/index.php', ['courseid' => $id]);
@@ -211,7 +211,7 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('coursesettings', 'plagiarism_advacheck'));
 
 if (empty($allowmodules)) {
-    $html = html_writer::div(get_string('notice2', 'plagiarism_advacheck'), "alert alert-warning");
+    $html = html_writer::div(get_string('notice_cm_not_allowed', 'plagiarism_advacheck'), "alert alert-warning");
     notice($html, new moodle_url('/plagiarism/advacheck/settings.php'));
 }
 echo html_writer::table($table);

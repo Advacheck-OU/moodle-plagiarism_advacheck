@@ -797,7 +797,7 @@ function plagiarism_advacheck_start_doc_verify($filename, $content, $is_long_str
                 // If there are no checks left, then we do not output anything.
                 $result->check_studs = 'none';
             } else {
-                $result->check_studs = get_string('stud_check1', 'plagiarism_advacheck', $c);
+                $result->check_studs = get_string('stud_check_after_edit', 'plagiarism_advacheck', $c);
             }
         }
         if ($originality >= $plugin_cfg->originality_limit) {
@@ -1087,44 +1087,44 @@ function plagiarism_advacheck_get_advacheck_tarif_info_html($login, $password, $
     $tariff_info_html->message .= get_string('success_check', 'plagiarism_advacheck') . '<p>';
 
     $tariff_info_html->message .= \html_writer::div(
-        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('tarifName', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
+        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('tarifname', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
         \html_writer::span($tariff_info->tarif->Name)
     );
 
     $tariff_info_html->message .= \html_writer::div(
-        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('SubscriptionDate', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
+        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('subscriptiondate', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
         \html_writer::span($tariff_info->tarif->SubscriptionDate)
     );
 
     $tariff_info_html->message .= \html_writer::div(
-        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('ExpirationDate', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
+        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('expirationdate', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
         \html_writer::span($tariff_info->tarif->ExpirationDate)
     );
 
     if ($tariff_info->tarif->TotalChecksCount == '') {
-        $cnt = get_string('TotalChecksCount_unlimited', 'plagiarism_advacheck');
+        $cnt = get_string('totalcheckscount_unlimited', 'plagiarism_advacheck');
     } else {
         $cnt = $tariff_info->tarif->TotalChecksCount;
     }
 
     $tariff_info_html->message .= \html_writer::div(
-        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('TotalChecksCount', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
+        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('totalcheckscount', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
         \html_writer::span($cnt)
     );
 
     if ($tariff_info->tarif->RemainedChecksCount == '') {
-        $cnt = get_string('RemainedChecksCount_unlimited', 'plagiarism_advacheck');
+        $cnt = get_string('remainedcheckscount_unlimited', 'plagiarism_advacheck');
     } else {
         $cnt = $tariff_info->tarif->RemainedChecksCount;
     }
 
     $tariff_info_html->message .= \html_writer::div(
-        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('RemainedChecksCount', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
+        \html_writer::span("&nbsp;&nbsp;&nbsp;&nbsp;" . get_string('remainedcheckscount', 'plagiarism_advacheck') . "&nbsp;&nbsp;&nbsp;") .
         \html_writer::span($cnt)
     );
 
     $tariff_info_html->message .= \html_writer::div(
-        \html_writer::span("<p><b>" . get_string('CheckServices', 'plagiarism_advacheck') . "</b></p> ")
+        \html_writer::span("<p><b>" . get_string('checkservices', 'plagiarism_advacheck') . "</b></p> ")
     );
     foreach ($tariff_info->tarif->CheckServices as $checkServices) {
         foreach ($checkServices as $checkService) {
@@ -1528,19 +1528,19 @@ function plagiarism_advacheck_queue_log(
             $action_str = $sm->get_string("action_end_download", 'plagiarism_advacheck', null, $CFG->lang);
             break;
         case 4:
-            $action_str = $sm->get_string("action_start_check", 'plagiarism_advacheck', null, $CFG->lang);
+            $action_str = $sm->get_string("action_start_verification", 'plagiarism_advacheck', null, $CFG->lang);
             break;
         case 5:
-            $action_str = $sm->get_string("action_verification_start", 'plagiarism_advacheck', null, $CFG->lang);
+            $action_str = $sm->get_string("action_end_verification", 'plagiarism_advacheck', null, $CFG->lang);
             break;
         case 6:
             $action_str = $sm->get_string("action_start_removing_from_index", 'plagiarism_advacheck', null, $CFG->lang);
             break;
         case 7:
-            $action_str = $sm->get_string("action_end_deleting_from_index", 'plagiarism_advacheck', null, $CFG->lang);
+            $action_str = $sm->get_string("action_end_removing_from_index", 'plagiarism_advacheck', null, $CFG->lang);
             break;
         case 8:
-            $action_str = $sm->get_string("action_add_to_index", 'plagiarism_advacheck', null, $CFG->lang);
+            $action_str = $sm->get_string("action_placement_to_index", 'plagiarism_advacheck', null, $CFG->lang);
             break;
         case 9:
             $action_str = $sm->get_string("action_result_updated", 'plagiarism_advacheck', null, $CFG->lang);

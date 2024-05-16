@@ -292,10 +292,10 @@ class advacheck_api
      */
     public function get_verification_report($docid, $author, $verifier)
     {
-        global $USER;
+        global $USER, $CFG;
         try {
             $vopt = ['Author' => $author, 'Verifier' => $verifier];
-            $l = empty($USER->lang) ? 'en' : $USER->lang;
+            $l = empty($USER->lang) ? $CFG->lang : $USER->lang;
             $lang = ['Language' => $l];
             $pdf = $this->client->GetVerificationReport(["docId" => $docid, "options" => $vopt, 'formattingOptions' => $lang]);
             return $pdf;

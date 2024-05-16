@@ -63,7 +63,7 @@ class plagiarism_advacheck_settings_form extends moodleform
                 $mform->addElement('checkbox', 'enabled', get_string('useadvacheck', 'plagiarism_advacheck'));
                 $mform->disabledIf('enabled', 'soap_enabled', 'eq', '0');
 
-                $header1 = html_writer::tag('h3', get_string('settings1', 'plagiarism_advacheck'), ['class' => 'main']);
+                $header1 = html_writer::tag('h3', get_string('settings_connection_header', 'plagiarism_advacheck'), ['class' => 'main']);
                 $mform->addElement('html', $header1);
 
                 $mform->addElement('text', 'uri', get_string('advacheck_uri', 'plagiarism_advacheck'), ['size' => 50]);
@@ -130,7 +130,7 @@ class plagiarism_advacheck_settings_form extends moodleform
                 // Let's add a JS fragment that handles a click on the button.
                 $PAGE->requires->js_call_amd('plagiarism_advacheck/check', 'checkTarif');
 
-                $header2 = html_writer::tag('h3', get_string('settings2', 'plagiarism_advacheck'), ['class' => 'main']);
+                $header2 = html_writer::tag('h3', get_string('settings_checking_header', 'plagiarism_advacheck'), ['class' => 'main']);
                 $mform->addElement('html', $header2);
 
                 $mform->addElement('text', 'cron_check_count', get_string('cron_check_count', 'plagiarism_advacheck'), array('size' => 3));
