@@ -992,7 +992,7 @@ class eventobservers
      * @param int $objectid message/reply ID.
      * @param int $userid
      * @param string $doctype Document type: file/assignment/forum/essay/workshop.
-     * @param int Id of quiz.
+     * @param int $quizid Id of quiz.
      */
     private static function delete_prev($component, $compid, $objectid, $userid, $doctype, $quizid = 0)
     {
@@ -1072,7 +1072,16 @@ class eventobservers
      * @global \moodle_database $DB driver object
      * @param string $doctype Document type: file/assignment/forum/essay/workshop.
      * @param string $typeid File id/response hash
-     * @param int $status status
+     * @param int $status Status of document
+     * @param int $objectid Id of answer
+     * @param int $timemodified Time answer modified
+     * @param int $userid Id of document`s user
+     * @param int $assign Id of assign
+     * @param int $discussion Id of discussion
+     * @param int $courseid Id of course
+     * @param int $cmid Id of course module
+     * @param int $stud_check Count of student checks
+     * @param int $attempt Attempt number
      */
     public static function add_to_queue(
         $doctype,
