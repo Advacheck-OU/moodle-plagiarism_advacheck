@@ -20,14 +20,13 @@
  * @package  plagiarism
  * @subpackage advacheck
  * @copyright © 2023 onwards Advacheck OU
- * @copyright based on work by 1999 Martin Dougiamas {@link http://moodle.com}
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 require_once (__DIR__ . '/../../config.php');
 require_once ($CFG->libdir . '/adminlib.php');
 require_once ($CFG->libdir . '/plagiarismlib.php');
 require_once ($CFG->dirroot . '/plagiarism/advacheck/lib.php');
-require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/settings_form.php');
+require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/forms/settings_form.php');
 
 require_login($SITE, false);
 

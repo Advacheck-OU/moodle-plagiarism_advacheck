@@ -19,28 +19,40 @@
  * @package  plagiarism
  * @subpackage advacheck
  * @copyright © 2023 onwards Advacheck OU
- * @copyright based on work by 1999 Martin Dougiamas {@link http://moodle.com}
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
 
+use \plagiarism_advacheck\local\advacheck_constants;
+use \plagiarism_advacheck\local\upload_start_check_manual;
+use \plagiarism_advacheck\local\queue_log_manager;
+use \plagiarism_advacheck\local\document_queue_manager;
+
 // Get global class.
 global $CFG;
 require_once ($CFG->dirroot . '/plagiarism/lib.php');
-require_once ($CFG->dirroot . '/plagiarism/advacheck/locallib.php');
-require_once ('constants.php');
+require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/local/constants.php');
+require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/local/document_queue_manager.php');
 
 class plagiarism_plugin_advacheck extends plagiarism_plugin
 {
 
-    /**
-     * Course module plagiarism advacheck settings.
-     */
+    /** Course module plagiarism advacheck settings. */
     public static $cnfg = null;
-    /**
-     * Common lagiarism advacheck settings.
-     */
+    /** Common lagiarism advacheck settings. */
     public static $plugin_cfg = null;
+    private static $docrecords = [];
+    /** flag - is first load or no*/
+    private static $firstload = true;
+    private static $course;
+    private static $courseid;
+    private static $context;
+    private static $cm;
+    private static $cmid;
+    private static $userid;
+    private static $siteadmin;
+    private static $doctype;
+    private static $submissiondrafts;
 
     /**
      * Hook to allow plagiarism specific information to be displayed beside a submission.
@@ -53,85 +65,53 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
         global $PAGE, $CFG, $DB;
         global $OUTPUT;
 
-        if (isset($linkarray["component"])) {
-            if ($linkarray["component"] == 'qtype_essay') {
-
-                $sql = "SELECT cm.id, cm.course
-                    FROM {context} ctx
-                    JOIN {course_modules} cm ON cm.id = ctx.instanceid
-                    WHERE ctx.id = ?";
-                $cm = $DB->get_record_sql($sql, [$linkarray['context']]);
-                $linkarray['cmid'] = $cm->id;
-                $linkarray['course'] = $cm->course;
-            } else {
-                return '';
-            }
-        }
-
-        $course = $linkarray['course'];
-        $courseid = is_object($course) ? $course->id : $course;
-        $context = context_module::instance($linkarray['cmid'], MUST_EXIST);
-
-        $userid = isset($linkarray['userid']) ? $linkarray['userid'] : null;
-        $isAdmin = is_siteadmin($userid);
-        if (!has_capability('plagiarism/advacheck:checkedby', $context, $userid) || $isAdmin) {
+        if (!$linkarray['userid']) {
             return '';
-        }
-
-        $cmid = $linkarray['cmid'];
-        $sql = "SELECT cm.*, m.name as modname FROM {course_modules} as cm, {modules} as m WHERE cm.id = ? AND cm.module = m.id";
-        $cm = $DB->get_record_sql($sql, [$cmid]);
-
-        $file = isset($linkarray['file']) ? $linkarray['file'] : null;
-        $content = isset($linkarray['content']) ? plagiarism_advacheck_get_strip_text_content_hash($linkarray['content'], true) : null;
-
-        $assignment = isset($linkarray['assignment']) ? $linkarray['assignment'] : null;
-        $forum = isset($linkarray['forum']) ? $linkarray['forum'] : null;
-        $workshop = $cm->modname == 'workshop' ? $cm->instance : null;
-        $sub = 0;
-        $discussion = 0;
-        if (isset($assignment)) {
-            $modulecontext = context_module::instance($cmid);
-            $assign = new assign($modulecontext, false, false);
-            $sub = $assign->get_user_submission($userid, false)->id;
         } else {
-            $discussion = optional_param("d", 0, PARAM_TEXT);
+            self::$userid = $linkarray['userid'];
         }
 
-        // Loaded the plugin settings and added JS to the page.
-        $this->_preLoad($cmid, $courseid);
+        if (self::$firstload) {
+            // Loaded the plugin settings and added JS to the page.
+            // проверить, что js подгружется для каждого текста и файла
+            $this->_preLoad($linkarray);
+            self::$firstload = false;
+        }
+
+        $file = isset($linkarray['file']) ? $linkarray['file'] : null;// file object
+        $content = isset($linkarray['content']) ? document_queue_manager::get_strip_text_content_hash($linkarray['content'], true) : null;//  clean text content
+
         // If the check is not enabled, it returns an empty string.
         if (empty(self::$cnfg->mode)) {
             return '';
         }
         // Let’s take the “can check?” rights once.
-        $checkcap = has_capability('plagiarism/advacheck:checkadvacheck', $context);
+        $checkcap = has_capability('plagiarism/advacheck:checkadvacheck', self::$context);
         // If the current user is a student and the display of scan results is disabled.
-        if (!self::$cnfg->disp_notices && !$checkcap && !$isAdmin) {
+        if (!self::$cnfg->disp_notices && !$checkcap && !self::$siteadmin) {
             return '';
         }
 
-        $doctype = plagiarism_advacheck_get_module_type_by_name($cm->modname);
         // If the course module is an assignment, then we will check whether verification is enabled in the assignments.
-        if ($doctype == PLAGIARISM_ADVACHECK_ASSIGN) {
+        if (self::$doctype == advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN) {
             if (empty(self::$plugin_cfg->check_assign)) {
                 return '';
             }
         }
         // If the course module is a forum, then let's check whether checking is enabled in forums.
-        if ($doctype == PLAGIARISM_ADVACHECK_FORUM) {
+        if (self::$doctype == advacheck_constants::PLAGIARISM_ADVACHECK_FORUM) {
             if (empty(self::$plugin_cfg->check_forum)) {
                 return '';
             }
         }
         // If the course module is a workshop, then we will check whether verification is enabled in workshops.
-        if ($doctype == PLAGIARISM_ADVACHECK_WORKSHOP) {
+        if (self::$doctype == advacheck_constants::PLAGIARISM_ADVACHECK_WORKSHOP) {
             if (empty(self::$plugin_cfg->check_workshop)) {
                 return '';
             }
         }
         // If the course module is a quiz, then we will check whether verification is enabled in quiz.
-        if ($doctype == PLAGIARISM_ADVACHECK_QUIZ) {
+        if (self::$doctype == advacheck_constants::PLAGIARISM_ADVACHECK_QUIZ) {
             if (empty(self::$plugin_cfg->check_quiz)) {
                 return '';
             }
@@ -143,60 +123,26 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 return '';
             }
 
-            $doctype = PLAGIARISM_ADVACHECK_FILE;
+            $doctype = advacheck_constants::PLAGIARISM_ADVACHECK_FILE;
             $typeid = $file->get_id();
 
-            $component = $file->get_component();
-            if ($component == 'assignsubmission_file') {
-                $assignment = $DB->get_record('assign_submission', ['id' => $file->get_itemid()], 'assignment')->assignment;
-            } else if ($component == 'mod_forum') {
-                $p_sql = "SELECT fp.discussion, fd.forum
-                            FROM {forum_posts} fp
-                            INNER JOIN {forum_discussions} fd ON fd.id = fp.discussion
-                            WHERE fp.id = ?";
-
-                $p = $DB->get_record_sql($p_sql, [$file->get_itemid()]);
-                $discussion = $p->discussion;
-                $forum = $p->forum;
-            } else if ($component == 'mod_workshop') {
-                $workshop = $DB->get_record('workshop_submissions', ['id' => $file->get_itemid()], 'workshopid')->workshopid;
-            } else if ($component != 'question') {
-                return '';
-            }
         } else if ($content) {
             // If the content is text, then let's check whether text checking is enabled.
             if (empty(self::$cnfg->checktext)) {
                 return '';
             }
-            $typeid = plagiarism_advacheck_get_strip_text_content_hash($linkarray['content']);
+            $doctype = self::$doctype;
+            $typeid = document_queue_manager::get_strip_text_content_hash($linkarray['content']);
         } else {
             return '';
         }
 
-        $AND = '';
-        $paramssql = [$doctype, $typeid, $userid];
-        if ($discussion != 0) {
-            $AND = " AND discussion =  ? ";
-            $paramssql[] = $discussion;
-        } else if ($assignment != 0) {
-            $AND = " AND assignment = ? ";
-            $paramssql[] = $assignment;
-        }
-
-        // Request to receive test results.
-        $sql = "SELECT *
-                FROM {plagiarism_advacheck_docs}
-                WHERE
-                doctype = ?
-                AND typeid = ?
-                AND userid = ?
-                $AND
-                ORDER BY timeadded";
-        $data = $DB->get_record_sql($sql, $paramssql, IGNORE_MULTIPLE);
+        $data = isset(self::$docrecords["$doctype-$typeid-" . self::$userid]) ? self::$docrecords["$doctype-$typeid-" . self::$userid] : false;
 
         // If we have results with a hash that was calculated with the old algorithm.
         if (!$data && isset($content)) {
-            $data = $DB->get_record_sql($sql, [sha1($linkarray['content'])], IGNORE_MULTIPLE);
+            $typeid2 = sha1($linkarray['content']);
+            $data = isset(self::$docrecords["$doctype-$typeid2-" . self::$userid]) ? self::$docrecords["$doctype-$typeid2-" . self::$userid] : false;
             if ($data) {
                 // Write new hash
                 $DB->set_field('plagiarism_advacheck_docs', 'typeid', $typeid, ['id' => $data->id]);
@@ -208,38 +154,31 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
         if ($data) {
             switch ((int) $data->status) {
                 // Waits for blocking - unless "Require students to click the submit button" is enabled in the task.
-                case PLAGIARISM_ADVACHECK_WAITBLOCK:
+                case advacheck_constants::PLAGIARISM_ADVACHECK_WAITBLOCK:
                     if ($checkcap) {
                         // If Require students to click the submit button.
-                        $submissiondrafts = $DB->get_field('assign', 'submissiondrafts', ['id' => $assignment]);
-                        if ($submissiondrafts) {
+                        if (self::$submissiondrafts) {
                             // Info for the teacher: the student must submit an answer for verification.
                             $msg = get_string('wait_block_submissiondrafts_yes', 'plagiarism_advacheck');
                         } else {
                             // For the teacher: You should be prohibited from changing the answer.
                             $msg = get_string('wait_block_submissiondrafts_no', 'plagiarism_advacheck');
                         }
-                        $output = plagiarism_advacheck_get_html_block_info($msg, 'advacheck-blue');
+                        $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $msg, 'infoclass' => 'advacheck-blue']);
                     } else {
                         // Information for students: let's check the limit of checks and how many have been checked.
                         if ((int) $data->stud_check >= (int) self::$cnfg->check_stud_lim) {
-                            $output = plagiarism_advacheck_get_html_block_info(get_string('stud_not_check', 'plagiarism_advacheck'), 'advacheck-green');
+                            $infostring = get_string('stud_not_check', 'plagiarism_advacheck');
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-green']);
                         } else {
                             $c = (int) self::$cnfg->check_stud_lim - (int) $data->stud_check;
-                            $output = plagiarism_advacheck_get_html_block_info(
-                                get_string('stud_check', 'plagiarism_advacheck', $c),
-                                "advacheck-green stud_check-$typeid"
-                            );
+                            $infostring = get_string('stud_check', 'plagiarism_advacheck', $c);
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-green']);
                             // Receive html buttons for sending for verification.
                             $output .= $this->get_check_button_html(
                                 true,
-                                $context,
-                                $courseid,
                                 $doctype,
                                 $content,
-                                $userid,
-                                $assignment,
-                                0,
                                 $typeid,
                                 $data->id
                             );
@@ -247,7 +186,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                     }
                     break;
                 // The document is waiting to be sent.
-                case PLAGIARISM_ADVACHECK_WAITUPLOAD:
+                case advacheck_constants::PLAGIARISM_ADVACHECK_WAITUPLOAD:
                     // We calculate the adding time.
                     $age = time() - (int) $data->timeadded;
                     // For forums, let's calculate whether the editing time has passed?
@@ -259,55 +198,44 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                         $a->i = intval($t / 60);
                         $a->s = $t - $a->i * 60;
                         $a->t = date('H:i', $a->t + (int) $CFG->maxeditingtime);
-                        $s = get_string('edit_time', 'plagiarism_advacheck', $a);
-                        $output = plagiarism_advacheck_get_html_block_info(get_string('edit_time', 'plagiarism_advacheck', $a), 'advacheck-green');
+                        $infostring = get_string('edit_time', 'plagiarism_advacheck', $a);
+                        $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-green']);
                     } else if (!$checkcap && $data->workshop != 0) {
                         // At the workshop, just like in the assignment, if the check limit for a student has not been reached, then we display a button.
                         if ((int) $data->stud_check >= (int) self::$cnfg->check_stud_lim) {
-                            $output = plagiarism_advacheck_get_html_block_info(get_string('stud_not_check', 'plagiarism_advacheck'), 'advacheck-green');
+                            $infostring = get_string('stud_not_check', 'plagiarism_advacheck');
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-green']);
                         } else {
                             $c = (int) self::$cnfg->check_stud_lim - (int) $data->stud_check;
-                            $output = plagiarism_advacheck_get_html_block_info(
-                                get_string('stud_check', 'plagiarism_advacheck', $c),
-                                "advacheck-green stud_check-$typeid"
-                            );
+                            $infostring = get_string('stud_check', 'plagiarism_advacheck', $c);
+                            $class = "advacheck-green stud_check-$typeid";
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => $class]);
+
                             // Receive html buttons for sending for verification.
                             $output .= $this->get_check_button_html(
                                 true,
-                                $context,
-                                $courseid,
                                 $doctype,
                                 $content,
-                                $userid,
-                                0,
-                                0,
                                 $typeid,
                                 $data->id
                             );
                         }
-                    } else { // If the editing time has expired and automatic checking is enabled, then display the corresponding information.
-                        if (self::$cnfg->mode == PLAGIARISM_ADVACHECK_AUTOMODE) {
-                            $output = plagiarism_advacheck_get_html_block_info(
-                                get_string('wait_upload', 'plagiarism_advacheck', ''),
-                                "advacheck-green check_notice-$typeid"
-                            );
+                    } else { // If the editing time has expired and automatic checking is enabled, then display the corresponding information.                        
+                        if (self::$cnfg->mode == advacheck_constants::PLAGIARISM_ADVACHECK_AUTOMODE) {
+                            $class = "check_notice $typeid advacheck-green";
+                            $infostring = get_string('wait_upload', 'plagiarism_advacheck', '');
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => $class]);
                         } else if (!$checkcap) {
                             // Information for students about the end of the check limit.
-                            $output = plagiarism_advacheck_get_html_block_info(
-                                get_string('stud_not_check', 'plagiarism_advacheck'),
-                                "advacheck-green check_notice-$typeid"
-                            );
+                            $class = "check_notice $typeid advacheck-green";
+                            $infostring = get_string('stud_not_check', 'plagiarism_advacheck');
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => $class]);
                         }
                         if ($checkcap) {
                             $output .= $this->get_check_button_html(
                                 $checkcap,
-                                $context,
-                                $courseid,
                                 $doctype,
                                 $content,
-                                $userid,
-                                $assignment,
-                                $discussion,
                                 $typeid,
                                 $data->id
                             );
@@ -315,65 +243,82 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                     }
                     break;
                 // The document is in the process of being uploaded.
-                case PLAGIARISM_ADVACHECK_UPLOADING:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('uploading', 'plagiarism_advacheck'), 'advacheck-green');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_UPLOADING:
+                    $infostring = get_string('uploading', 'plagiarism_advacheck');
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-green']);
                     break;
                 // The document has been uploaded.
-                case PLAGIARISM_ADVACHECK_UPLOADED:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('uploaded', 'plagiarism_advacheck'), 'advacheck-green');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_UPLOADED:
+                    $infostring = get_string('uploaded', 'plagiarism_advacheck');
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-green']);
                     break;
                 // The document is in the process of being reviewed.
-                case PLAGIARISM_ADVACHECK_CHECKING:
-                    $output = html_writer::span(get_string('checking', 'plagiarism_advacheck'), 'advacheck-green');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_CHECKING:
                     // Animation of the verification process.
-                    $output .= html_writer::img(plagiarism_advacheck_get_icn_advacheck('loader'), get_string('checking', 'plagiarism_advacheck'), ['class' => 'advacheck-loader']);
+                    $infostring = get_string('checking', 'plagiarism_advacheck');
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-green']);
+                    $data = [
+                        'typeid' => $typeid,
+                        'hidden' => '',
+                        'infostring' => get_string('checking', 'plagiarism_advacheck')
+                    ];
+                    // Get loader animation.
+                    $output .= $OUTPUT->render_from_template('plagiarism_advacheck/loaderimg', $data);
                     break;
                 // Insufficient number of words.
-                case PLAGIARISM_ADVACHECK_LESSNWORDS:
-                    // Display a message at the time of queuing, because the number of words could have changed.
-                    $output = plagiarism_advacheck_get_html_block_info($data->error, 'advacheck-gray');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_LESSNWORDS:
+                    // Display a message at the time of queuing, because the number of words could have changed.                    
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $data->error, 'infoclass' => 'advacheck-gray']);
                     break;
                 // There is no right to be verified - we don’t show anything, for example, a teacher’s answer on the forum.
-                case PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY:
+                case advacheck_constants::PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY:
                     $output = '';
                     break;
-                case PLAGIARISM_ADVACHECK_INVALIDFILETYPE:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('error_filetype', 'plagiarism_advacheck', $data->error), 'advacheck-red');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_INVALIDFILETYPE:
+                    $infostring = get_string('uploaded', 'plagiarism_advacheck');
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
                     break;
                 // Error when trying to upload.
-                case PLAGIARISM_ADVACHECK_ERROR_UPLOADING:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('error_upload', 'plagiarism_advacheck', $data->error), 'advacheck-red');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_UPLOADING:
+                    $infostring = get_string('error_upload', 'plagiarism_advacheck', $data->error);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
                     break;
                 // Error when initiating document verification.
-                case PLAGIARISM_ADVACHECK_ERROR_CHECKING:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('error_checking', 'plagiarism_advacheck', $data->error), 'advacheck-red');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_CHECKING:
+                    $infostring = get_string('error_checking', 'plagiarism_advacheck', $data->error);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
                     break;
                 // An error occurred during the verification process.   
-                case PLAGIARISM_ADVACHECK_ERROR_CHECK:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('error_check', 'plagiarism_advacheck', $data->error), 'advacheck-red');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_CHECK:
+                    $infostring = get_string('error_check', 'plagiarism_advacheck', $data->error);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
                     break;
                 // Error when trying to get status.
-                case PLAGIARISM_ADVACHECK_ERROR_GET_STATUS:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('error_get_status', 'plagiarism_advacheck', $data->error), 'advacheck-red');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_GET_STATUS:
+                    $infostring = get_string('error_get_status', 'plagiarism_advacheck', $data->error);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
                     break;
                 // When trying to get a report.
-                case PLAGIARISM_ADVACHECK_ERROR_GET_REPORT:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('error_get_report', 'plagiarism_advacheck', $data->error), 'advacheck-red');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_GET_REPORT:
+                    $infostring = get_string('error_get_report', 'plagiarism_advacheck', $data->error);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
                     break;
                 // Error when trying to add/remove to index.
-                case PLAGIARISM_ADVACHECK_ERROR_INDEX:
-                    $output = plagiarism_advacheck_get_html_block_info(get_string('error_index', 'plagiarism_advacheck', $data->error), 'advacheck-red');
+                case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_INDEX:
+                    $infostring = get_string('error_index', 'plagiarism_advacheck', $data->error);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
                     break;
                 // In other cases, we display the results of the check.
                 default:
-                    $output = $this->get_result_html($data, $context);
+                    $output = $this->get_result_html($data);
                     break;
             }
         } else {
             // The case when the document is not added to the queue.
             // We show the message only to those who have the right to check documents.
             if ($checkcap) {
-                $output = plagiarism_advacheck_get_html_block_info(get_string('not_in_queue', 'plagiarism_advacheck'), 'advacheck-red');
+                $infostring = get_string('not_in_queue', 'plagiarism_advacheck');
+                $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
             }
         }
 
@@ -393,16 +338,56 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
      * @param int $cmid
      * @param int $courseid
      */
-    private function _preLoad($cmid, $courseid)
+    private function _preLoad($linkarray)
     {
         global $PAGE, $DB;
+
+        self::$siteadmin = is_siteadmin($linkarray['userid']);
+        if (isset($linkarray["component"])) {
+            if ($linkarray["component"] == 'qtype_essay') {
+
+                $sql =
+                    "SELECT cm.id, cm.course
+                       FROM {context} ctx
+                       JOIN {course_modules} cm ON cm.id = ctx.instanceid
+                      WHERE ctx.id = ?";
+                $cm = $DB->get_record_sql($sql, [$linkarray['context']]);
+                $linkarray['cmid'] = $cm->id;
+                $linkarray['course'] = $cm->course;
+            } else {
+                return '';
+            }
+        }
+
+        self::$course = $linkarray['course'];
+        self::$courseid = is_object(static::$course) ? static::$course->id : static::$course;
+        self::$context = context_module::instance($linkarray['cmid'], MUST_EXIST);
+        self::$cmid = $linkarray['cmid'];
+        $sql = "SELECT cm.*, m.name as modname, cm.instance 
+                  FROM {course_modules} cm
+                  JOIN {modules} m ON cm.module = m.id
+                 WHERE cm.id = ? 
+                 ";
+        self::$cm = $DB->get_record_sql($sql, [self::$cmid]);
+        self::$doctype = $this->get_module_type_by_name(self::$cm->modname);
+        if (self::$doctype == advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN) {
+            self::$submissiondrafts = $DB->get_field('assign', 'submissiondrafts', ['id' => self::$cm->instance]);
+        }
 
         if (self::$plugin_cfg == null) {
             self::$plugin_cfg = get_config('plagiarism_advacheck');
         }
 
         if (self::$cnfg == null) {
-            self::$cnfg = $DB->get_record('plagiarism_advacheck_course', ['cmid' => $cmid, 'courseid' => $courseid]);
+            self::$cnfg = $DB->get_record('plagiarism_advacheck_course', ['cmid' => self::$cmid, 'courseid' => self::$courseid]);
+        }
+        // Get docrecords for this coursemodule
+        $docrecrdsraw = $DB->get_records('plagiarism_advacheck_docs', ['cmid' => self::$cmid], 'timeadded ASC');
+        foreach ($docrecrdsraw as $drr) {
+            $key = "$drr->doctype-$drr->typeid-$drr->userid";
+            if (empty(self::$docrecords[$key])) {
+                self::$docrecords[$key] = $drr; // Select records
+            }
         }
         $PAGE->requires->js_call_amd('plagiarism_advacheck/check', 'addPlagiarismCtrlButtons');
     }
@@ -412,10 +397,10 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
      *
      * @global object $OUTPUT
      * @param stdClass $data Structure with test results.
-     * @param context $context
+     * @param contextself::$context
      * @return string
      */
-    private function get_result_html($data, $context)
+    private function get_result_html($data)
     {
         global $OUTPUT, $USER;
         $output = '';
@@ -450,108 +435,69 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
             $orig = round($orig, 2);
         }
 
-        $report = "";
-        $report_img = html_writer::img(plagiarism_advacheck_get_icn_advacheck('report_link'), get_string('report', 'plagiarism_advacheck'));
-
-        if (has_capability('plagiarism/advacheck:viewfullreport', $context)) {
+        // Get the link according to the rights.
+        $link = '';
+        if (has_capability('plagiarism/advacheck:viewfullreport', self::$context)) {
             // If you have the right to view the full report
             if (!empty($data->reportedit)) {
-                $report = html_writer::link(
-                    self::$plugin_cfg->uri . $data->reportedit,
-                    $report_img,
-                    ['target' => '_blank', 'title' => get_string('report', 'plagiarism_advacheck')]
-                );
+                $link = self::$plugin_cfg->uri . $data->reportedit;
             }
         } else if (
             // If you have the right to view the full report or report output mode = view the full report or work by the student checking in the workshop.
-            has_capability('plagiarism/advacheck:viewfullreadreport', $context) || (int) self::$cnfg->disp_notices == 2 ||
+            has_capability('plagiarism/advacheck:viewfullreadreport', self::$context) || (int) self::$cnfg->disp_notices == 2 ||
             ($data->discussion == 0 && $data->assignment == 0 && $USER->id != $data->userid)
         ) {
             if (!empty($data->reportread)) {
-                $report = html_writer::link(
-                    self::$plugin_cfg->uri . $data->reportread,
-                    $report_img,
-                    ['target' => '_blank', 'title' => get_string('report', 'plagiarism_advacheck')]
-                );
+                $link = self::$plugin_cfg->uri . $data->reportread;
             }
-        } else if (has_capability('plagiarism/advacheck:viewshortreport', $context) || (int) self::$cnfg->disp_notices == 1) {
+        } else if (has_capability('plagiarism/advacheck:viewshortreport', self::$context) || (int) self::$cnfg->disp_notices == 1) {
             // If you have the right to view a short report or water notification mode = short report.
             if (!empty($data->shortreport)) {
-                $report = html_writer::link(
-                    self::$plugin_cfg->uri . $data->shortreport,
-                    $report_img,
-                    ['target' => '_blank', 'title' => get_string('report', 'plagiarism_advacheck')]
-                );
+                $link = self::$plugin_cfg->uri . $data->shortreport;
             }
         }
-        // For the html icon "refresh report".
-        $update_report_div = '';
-        if (has_capability('plagiarism/advacheck:updatereport', $context) && !empty($data->docidantplgt)) {
-            $alt = get_string('updatereport', 'plagiarism_advacheck');
-            $update_report = html_writer::img(plagiarism_advacheck_get_icn_advacheck('refresh'), $alt);
-            $update_report_btn = html_writer::link('#', $update_report, ['class' => "update_report", 'title' => $alt]);
-            $update_report_div = html_writer::span(
-                html_writer::span($data->typeid, 'typeid'),
-                "advacheck-data"
-            ) . $update_report_btn;
-        }
-        // For the html icon "Upload help".
-        $download_btn = '';
-        // If there is an “upload certificate” option for this brand.
-        if (PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE) {
-            $alt = get_string('downloadreport', 'plagiarism_advacheck');
-            $download = html_writer::img(plagiarism_advacheck_get_icn_advacheck('download'), $alt);
-            $download_lnk = new moodle_url("/plagiarism/advacheck/downloadfile.php", ['userid' => $data->userid, 'docid' => $data->id]);
-            $download_btn = html_writer::link($download_lnk, $download, ['class' => "download", 'title' => $alt]);
-        }
 
-        $plag_html = html_writer::span(get_string('plagiarism', 'plagiarism_advacheck'), 'advacheck-value-plag');
-        $plag_html .= html_writer::span($plagiarism . '% ', "plagiarism-$data->typeid");
-
-        $selfcite_html = html_writer::span(get_string('selfcite', 'plagiarism_advacheck'), 'advacheck-value-selfcite');
-        $selfcite_html .= html_writer::span($selfcite . '% ', "selfcite-$data->typeid");
-
-        $legal_html = html_writer::span(get_string('legal', 'plagiarism_advacheck'), 'advacheck-value-legal');
-        $legal_html .= html_writer::span($legal . '% ', "legal-$data->typeid");
-
-        $orig_html = html_writer::span(get_string('originality', 'plagiarism_advacheck'), 'advacheck-value-orig');
-        $orig_html .= html_writer::span($orig . '% ', "originality-$data->typeid");
-
+        // Get class to display or not suspicious icon
+        $suspicioustoggleclass = '';
         if (!$data->issuspicious) {
-            $cls = "$data->typeid advacheck-suspiciousoff";
+            $suspicioustoggleclass = "$data->typeid advacheck-suspiciousoff";
         } else {
-            $cls = "$data->typeid advacheck-suspiciouson";
-        }
-        $suspicious_img = html_writer::img(plagiarism_advacheck_get_icn_advacheck('suspicious'), get_string('suspicious', 'plagiarism_advacheck'));
-        $link = '';
-        if (has_capability('plagiarism/advacheck:viewfullreport', $context)) {
-            $link = self::$plugin_cfg->uri . $data->reportedit;
-        } else if (
-            has_capability('plagiarism/advacheck:viewfullreadreport', $context) || (int) self::$cnfg->disp_notices == 2 ||
-            ($data->discussion == 0 && $data->assignment == 0 && $USER->id != $data->userid)
-        ) {
-            $link = self::$plugin_cfg->uri . $data->reportread;
-        } else if (has_capability('plagiarism/advacheck:viewshortreport', $context) || (int) self::$cnfg->disp_notices == 1) {
-            $link = self::$plugin_cfg->uri . $data->shortreport;
+            $suspicioustoggleclass = "$data->typeid advacheck-suspiciouson";
         }
 
-        $suspicious_link = html_writer::link(
-            $link,
-            $suspicious_img,
-            ['target' => '_blank', 'title' => get_string('suspicious', 'plagiarism_advacheck'), 'class' => "advacheck-suspicious_lnk $data->typeid"]
-        );
-        $suspicious_html = html_writer::span($suspicious_link, $cls);
-
-        $res = $plag_html . ' ' . $selfcite_html . ' ' . $legal_html . ' ' . $orig_html . $report . ' ' . $update_report_div . ' ' . $download_btn . ' ' . $suspicious_html;
-
-        $class = "advacheck $data->typeid";
+        // Get class to fill block with check result
+        $class = "";
         if ($orig >= self::$plugin_cfg->originality_limit) {
             $class .= " advacheck-green";
         } else {
             $class .= " advacheck-red";
         }
-        $output = html_writer::div($res, $class) . $OUTPUT->help_icon('checkresult', 'plagiarism_advacheck');
-        $output = html_writer::div($output);
+
+        // Html of button to download certificate about check.
+        // Optional functionality, check with the verification services subscription provider.
+        $downloadcertificate = '';
+        if (advacheck_constants::PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE) {
+            $data = [
+                'downloadhref' => new moodle_url("/plagiarism/advacheck/downloadfile.php", ['userid' => $data->userid, 'docid' => $data->docid])
+            ];
+            $downloadcertificate = $OUTPUT->render_from_template('plagiarism_advacheck/downloadcertificate', $data);
+        }
+        $data = [
+            'typeid' => $data->typeid,
+            'class' => $class,
+            'plagiarism' => $plagiarism,
+            'selfcite' => $selfcite,
+            'legal' => $legal,
+            'originality' => $orig,
+            'reportlinkhref' => $link,
+            'updatereporthref' => '#',
+            'downloadcertificate' => $downloadcertificate,
+            'suspiciouslnkhref' => $link,
+            'suspicioustoggleclass' => $suspicioustoggleclass,
+
+        ];
+        $output = $OUTPUT->render_from_template('plagiarism_advacheck/plagiarismresult', $data);
+        $output .= $OUTPUT->help_icon('checkresult', 'plagiarism_advacheck');
         return $output;
     }
 
@@ -559,147 +505,99 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
      * Collects the html code of the submit button for review.
      *
      * @param bool $checkcap
-     * @param context $context
-     * @param int $courseid
      * @param int $doctype
      * @param string $content
-     * @param int $userid
-     * @param int $assignment
-     * @param int $discussion
      * @param string $hash
+     * @param int $docid
      * @return string
      */
     private function get_check_button_html(
         $checkcap,
-        $context,
-        $courseid,
         $doctype,
         $content,
-        $userid,
-        $assignment,
-        $discussion,
         $typeid,
         $docid
     ) {
         global $OUTPUT;
         $output = '';
-        $class_btn = "advacheck-checkbtn $typeid";
-
-        $properties = ['class' => $class_btn, 'title' => get_string('check_advacheck', 'plagiarism_advacheck')];
-        $checkBtn = "";
         if ($checkcap) {
-            // For html button "Check".
-            $icon_name = strtolower('Advacheck');
-            $checkBtn = html_writer::link(
-                '#',
-                html_writer::img(
-                    plagiarism_advacheck_get_icn_advacheck($icon_name),
-                    get_string('check_advacheck', 'plagiarism_advacheck')
-                ),
-                $properties
-            );
-            // For html button "report".
-            $report = "";
-            $report_img = html_writer::img(plagiarism_advacheck_get_icn_advacheck('report_link'), get_string('report', 'plagiarism_advacheck'));
-            if (has_capability('plagiarism/advacheck:viewshortreport', $context)) {
-                if (has_capability('plagiarism/advacheck:checkadvacheck', $context)) {
-                    $report = html_writer::link(
-                        "#",
-                        $report_img,
-                        [
-                            'class' => "advacheck-report-$typeid",
-                            'target' => '_blank',
-                            'title' => get_string(
-                                'report',
-                                'plagiarism_advacheck'
-                            ),
-                        ]
-                    );
-                } else {
-                    $report = html_writer::link(
-                        "#",
-                        $report_img,
-                        [
-                            'class' => "advacheck-report-$typeid",
-                            'target' => '_blank',
-                            'title' => get_string(
-                                'report',
-                                'plagiarism_advacheck'
-                            ),
-                        ]
-                    );
-                }
+            // Html of button to download certificate about check.
+            // Optional functionality, check with the verification services subscription provider.
+            $downloadcertificate = '';
+            if (advacheck_constants::PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE) {
+                $data = [
+                    'downloadhref' => new moodle_url("/plagiarism/advacheck/downloadfile.php", ['userid' => self::$userid, 'docid' => $docid])
+                ];
+                $downloadcertificate = $OUTPUT->render_from_template('plagiarism_advacheck/downloadcertificate', $data);
             }
-            // For html button "update report".
-            $update_report_div = '';
-            if (has_capability('plagiarism/advacheck:updatereport', $context)) {
-                $alt = get_string('updatereport', 'plagiarism_advacheck');
-                $update_report = html_writer::img(plagiarism_advacheck_get_icn_advacheck('refresh'), $alt);
-                $update_report_btn = html_writer::link('#', $update_report, ['class' => "update_report", 'title' => $alt]);
-                $update_report_div = html_writer::span(
-                    html_writer::span($typeid, 'typeid'),
-                    "advacheck-data $typeid"
-                ) . $update_report_btn;
-            }
+            $data = [
+                'typeid' => $typeid,
+                'hidden' => 'advacheck-hidden',
+                'infostring' => get_string('checking', 'plagiarism_advacheck')
+            ];
+            // Get loader animation.
+            $loaderhtml = $OUTPUT->render_from_template('plagiarism_advacheck/loaderimg', $data);
+            $data = [
+                'typeid' => $typeid,
+                'class' => 'advacheck-hidden',
+                'plagiarism' => '-',
+                'selfcite' => '-',
+                'legal' => '-',
+                'originality' => '-',
+                'reportlinkhref' => '#',
+                'updatereporthref' => '#',
+                'downloadcertificate' => $downloadcertificate,
+                'suspiciouslnkhref' => '#',
+                'suspicioustoggleclass' => 'advacheck-suspiciousoff',
 
-            // For the html icon "Upload help".
-            $download_btn = '';
-            // If there is an “upload certificate” option for this brand.
-            if (PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE) {
-                $alt = get_string('downloadreport', 'plagiarism_advacheck');
-                $download = html_writer::img(plagiarism_advacheck_get_icn_advacheck('download'), $alt);
-                $download_lnk = new moodle_url("/plagiarism/advacheck/downloadfile.php", ['userid' => $userid, 'docid' => $docid]);
-                $download_btn = html_writer::link($download_lnk, $download, ['class' => "download", 'title' => $alt]);
-            }
-
-            $plag_html = html_writer::span(get_string('plagiarism', 'plagiarism_advacheck'), 'advacheck-value-plag');
-            $plag_html .= html_writer::span("-", "plagiarism-$typeid");
-
-            $selfcite_html = html_writer::span(get_string('selfcite', 'plagiarism_advacheck'), 'advacheck-value-selfcite');
-            $selfcite_html .= html_writer::span('-', "selfcite-$typeid");
-
-            $legal_html = html_writer::span(get_string('legal', 'plagiarism_advacheck'), 'advacheck-value-legal');
-            $legal_html .= html_writer::span('-', "legal-$typeid");
-
-            $orig_html = html_writer::span(get_string('originality', 'plagiarism_advacheck'), 'advacheck-value-orig');
-            $orig_html .= html_writer::span('-', "originality-$typeid");
-
-            $suspicious_img = html_writer::img(plagiarism_advacheck_get_icn_advacheck('suspicious'), get_string('suspicious', 'plagiarism_advacheck'));
-            $suspicious_link = html_writer::link(
-                '#',
-                $suspicious_img,
-                ['title' => get_string('suspicious', 'plagiarism_advacheck'), 'class' => "advacheck-suspicious_lnk $typeid", 'target' => '_blank']
-            );
-            $suspicious_html = html_writer::span($suspicious_link, "advacheck-suspicious-$typeid advacheck-hidden");
-            // Blank with a percentage of originality, hidden style.
-            $res = html_writer::div($plag_html . ' ' . $selfcite_html . ' ' . $legal_html . ' ' . $orig_html . " " . $report . ' '
-                . $update_report_div . ' ' . $download_btn . ' ' . $suspicious_html, "advacheck $typeid advacheck-hidden");
-
-            $help = html_writer::span($OUTPUT->help_icon('checkresult', 'plagiarism_advacheck'), "advacheck_help $typeid");
-            // Let's clear the content from tags in order to add it to the page in a hidden form, so that when the button is clicked, it is sent for verification.
-            if (!isset($content)) {
-                $content = '';
-            }
-            // Let's add the metadata necessary to send a document for review from the button.
-            $output = html_writer::div(
-                html_writer::div(
-                    html_writer::span($courseid, 'courseid') .
-                    html_writer::span($doctype, 'doctype') .
-                    html_writer::span($content, 'content') .
-                    html_writer::span($userid, 'userid') .
-                    html_writer::span($assignment, 'assignment') .
-                    html_writer::span($discussion, 'discussion') .
-                    html_writer::span($typeid, 'typeid'),
-                    "advacheck-data $typeid"
-                ) .
-                html_writer::span(get_string('checking', 'plagiarism_advacheck'), "advacheck-data advacheck-green checking $typeid") .
-                html_writer::img(plagiarism_advacheck_get_icn_advacheck('loader'), get_string('checking', 'plagiarism_advacheck'), ['class' => "advacheck-loader $typeid advacheck-hidden"]) .
-                $res . $help .
-                $checkBtn,
-                "advacheck "
-            );
+            ];
+            $plagiarismresult = $OUTPUT->render_from_template('plagiarism_advacheck/plagiarismresult', $data);
+            $data = [
+                'typeid' => $typeid,
+                'loader' => $loaderhtml,
+                'courseid' => self::$courseid,
+                'doctype' => $doctype,
+                'content' => $content,
+                'userid' => self::$userid,
+                'plagiarismresult' => $plagiarismresult,
+                'advacheck_help' => $OUTPUT->help_icon('checkresult', 'plagiarism_advacheck'),
+            ];
+            $output = $OUTPUT->render_from_template('plagiarism_advacheck/checkbutton', $data);
         }
         return $output;
+    }
+
+    /**
+     * Matches string names of course module type and numeric constants and vice versa
+     *
+     * @param mixed $mod
+     * @return mixed
+     */
+    private function get_module_type_by_name($mod, $rev = true)
+    {
+        if ($rev) {
+            switch ($mod) {
+                case 'forum':
+                    return advacheck_constants::PLAGIARISM_ADVACHECK_FORUM;
+                case 'assign':
+                    return advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN;
+                case 'workshop':
+                    return advacheck_constants::PLAGIARISM_ADVACHECK_WORKSHOP;
+                case 'quiz':
+                    return advacheck_constants::PLAGIARISM_ADVACHECK_QUIZ;
+            }
+        } else {
+            switch ($mod) {
+                case advacheck_constants::PLAGIARISM_ADVACHECK_FORUM:
+                    return 'forum';
+                case advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN:
+                    return 'assign';
+                case advacheck_constants::PLAGIARISM_ADVACHECK_WORKSHOP:
+                    return 'workshop';
+                case advacheck_constants::PLAGIARISM_ADVACHECK_QUIZ:
+                    return 'quiz';
+            }
+        }
     }
 }
 
@@ -711,11 +609,11 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
  */
 function plagiarism_advacheck_coursemodule_standard_elements($formwrapper, $mform)
 {
-    global $DB, $COURSE, $CFG, $PLAGIARISM_ADVACHECK_WORKS_TYPES;
+    global $DB, $COURSE, $CFG;
 
     $plugin_cfg = get_config('plagiarism_advacheck');
 
-    if (!$plugin_cfg->enabled) {
+    if (empty($plugin_cfg->enabled)) {
         return;
     }
 
@@ -765,9 +663,9 @@ function plagiarism_advacheck_coursemodule_standard_elements($formwrapper, $mfor
 
         // Check mode.
         $options = [
-            PLAGIARISM_ADVACHECK_DISABLEDMODE => get_string('disabledmode', 'plagiarism_advacheck'),
-            PLAGIARISM_ADVACHECK_MANUALMODE => get_string('manualmode', 'plagiarism_advacheck'),
-            PLAGIARISM_ADVACHECK_AUTOMODE => get_string('automode', 'plagiarism_advacheck'),
+            advacheck_constants::PLAGIARISM_ADVACHECK_DISABLEDMODE => get_string('disabledmode', 'plagiarism_advacheck'),
+            advacheck_constants::PLAGIARISM_ADVACHECK_MANUALMODE => get_string('manualmode', 'plagiarism_advacheck'),
+            advacheck_constants::PLAGIARISM_ADVACHECK_AUTOMODE => get_string('automode', 'plagiarism_advacheck'),
         ];
         $mod_settings = $DB->get_record('plagiarism_advacheck_course', ['cmid' => $cmid]);
 
@@ -836,7 +734,7 @@ function plagiarism_advacheck_coursemodule_standard_elements($formwrapper, $mfor
             $mform->setDefault('check_stud_lim', $check_stud_lim_default);
         }
         // Type of document being checked.
-        $mform->addElement('select', 'works_types', get_string('works_types', 'plagiarism_advacheck'), $PLAGIARISM_ADVACHECK_WORKS_TYPES);
+        $mform->addElement('select', 'works_types', get_string('works_types', 'plagiarism_advacheck'), advacheck_constants::get_advacheck_works_types());
         $mform->disabledIf('works_types', 'advacheck_mode', 'eq', 0);
         if (isset($mod_settings->works_types)) {
             $mform->setDefault('works_types', $mod_settings->works_types);
@@ -871,7 +769,6 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
     $instance = $data->instance;
     $modulename = $data->modulename;
     $cmid = $data->coursemodule;
-    $courseid = $data->course;
     if (!empty($plugin_cfg->check_forum)) {
         $allowmodules[] = "forum";
     }
@@ -938,115 +835,109 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
                 $docscnt = $DB->count_records('plagiarism_advacheck_docs', ['cmid' => $cmid]);
                 if ($postscnt != $docscnt) {
                     unset($posts);
-                    $sql = "SELECT
-                    fp.id,
-                    fp.message,
-                    fp.userid,
-                    fp.attachment,
-                    fp.discussion,
-                    fp.modified AS time
-                FROM  {forum_posts} fp
-                    INNER JOIN {forum_discussions} fd ON fp.discussion = fd.id
-                WHERE fd.forum = ?";
+                    $sql =
+                        "SELECT fp.id, fp.message, fp.userid, fp.attachment, fp.discussion, fp.modified AS time
+                           FROM {forum_posts} fp
+                           JOIN {forum_discussions} fd ON fp.discussion = fd.id
+                          WHERE fd.forum = ?";
                     $posts = $DB->get_records_sql($sql, [$instance]);
                     foreach ($posts as $p) {
                         if (empty($p->message)) {
                             continue;
                         }
                         if (!empty($data->advacheck_checktext)) {
-                            plagiarism_advacheck_add_to_queue_forum_text($coursecontext, $modcontext, $plugin_cfg, $p, $courseid, $cmid);
+                            $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $p, $cmid, $data->course);
+                            $addtodocqueue->add_to_queue_forum_text();
                         }
                         if (!empty($data->advacheck_checkfile) && !empty($p->attachment)) {
                             $fs = get_file_storage();
                             $files = $fs->get_area_files($modcontext->id, 'mod_forum', 'attachment', $p->id);
-                            plagiarism_advacheck_add_to_queue_file($files, $p, $modulename, $coursecontext, $courseid, $cmid);
+                            $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $p, $cmid, $data->course);
+                            $addtodocqueue->add_to_queue_file($files, $modulename);
                         }
                     }
                 }
             } else if ($modulename == "assign") {
                 unset($subs);
-                $sql = "SELECT
-                    sub.id,
-                    sub_text.onlinetext AS txt,
-                    sub.userid,
-                    sub.assignment AS assign,
-                    sub.status,
-                    sub_file.numfiles,
-                    sub.timemodified AS time
-                FROM {assign_submission} sub
-                    LEFT JOIN {assignsubmission_onlinetext} sub_text ON sub.id = sub_text.submission
-                    LEFT JOIN {assignsubmission_file} sub_file ON sub.id = sub_file.submission
-                WHERE sub.assignment = ?";
+                $sql =
+                    "SELECT sub.id, sub_text.onlinetext AS txt, sub.userid, sub.assignment AS assign, sub.status, sub_file.numfiles, sub.timemodified AS time                
+                       FROM {assign_submission} sub
+                  LEFT JOIN {assignsubmission_onlinetext} sub_text ON sub.id = sub_text.submission
+                  LEFT JOIN {assignsubmission_file} sub_file ON sub.id = sub_file.submission
+                      WHERE sub.assignment = ?";
                 $subs = $DB->get_records_sql($sql, [$instance]);
                 foreach ($subs as $s) {
                     if (empty($s->txt)) {
                         continue;
                     }
                     if (!empty($data->advacheck_checktext)) {
-                        plagiarism_advacheck_add_to_queue_assign_text($coursecontext, $modcontext, $plugin_cfg, $s, $courseid, $cmid);
+                        $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $s, $cmid, $data->course);
+                        $addtodocqueue->add_to_queue_assign_text();
                     }
                     if (!empty($data->advacheck_checkfile) && !empty($s->numfiles)) {
                         $fs = get_file_storage();
                         $files = $fs->get_area_files($modcontext->id, 'assignsubmission_file', ASSIGNSUBMISSION_FILE_FILEAREA, $s->id);
-                        plagiarism_advacheck_add_to_queue_file($files, $s, $modulename, $coursecontext, $courseid, $cmid);
+                        $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $s, $cmid, $data->course);
+                        $addtodocqueue->add_to_queue_file($files, $modulename);
                     }
                 }
             } else if ($modulename == 'workshop') {
-                $sql = "SELECT
-                    sub.id,
-                    sub.content AS txt,
-                    sub.authorid AS userid,
-                    sub.workshopid,
-                    sub.published,
-                    sub.timemodified AS time
-                FROM {workshop_submissions} sub
-                WHERE sub.workshopid = ?";
+                $sql =
+                    "SELECT sub.id,  sub.content AS txt, sub.authorid AS userid,  sub.workshopid, sub.published, sub.timemodified AS time
+                       FROM {workshop_submissions} sub
+                      WHERE sub.workshopid = ?";
                 $subs = $DB->get_records_sql($sql, [$instance]);
                 foreach ($subs as $s) {
                     if (empty($s->txt)) {
                         continue;
                     }
                     if (!empty($data->advacheck_checktext)) {
-                        plagiarism_advacheck_add_to_queue_workshop_text($coursecontext, $modcontext, $plugin_cfg, $s, $courseid, $cmid);
+                        $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $s, $cmid, $data->course);
+                        $addtodocqueue->add_to_queue_workshop_text();
                     }
                     if (!empty($data->advacheck_checkfile)) {
                         $fs = get_file_storage();
                         $files = $fs->get_area_files($modcontext->id, 'mod_workshop', 'submission_attachment', $s->id);
                         if (count($files) != 0) {
-                            plagiarism_advacheck_add_to_queue_file($files, $s, $modulename, $coursecontext, $courseid, $cmid);
+                            $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $s, $cmid, $data->course);
+                            $addtodocqueue->add_to_queue_file($files, $modulename);
                         }
                     }
                 }
             } else if ($modulename == 'quiz') {
                 if (!empty($data->advacheck_checktext)) {
-                    $sql = "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid
-                        FROM {question_attempts} qa 
-                        JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
-                        JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND asd.name = 'answer'
-                        JOIN {question} q ON qa.questionid = q.id AND q.qtype = 'essay'
-                        JOIN {quiz_attempts} quiza ON quiza.uniqueid = qa.questionusageid
-                        WHERE quiza.quiz = ?";
+                    $sql =
+                        "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid
+                           FROM {question_attempts} qa 
+                           JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+                           JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND asd.name = 'answer'
+                           JOIN {question} q ON qa.questionid = q.id AND q.qtype = 'essay'
+                           JOIN {quiz_attempts} quiza ON quiza.uniqueid = qa.questionusageid
+                          WHERE quiza.quiz = ?";
                     $attempts_t = $DB->get_records_sql($sql, [$instance]);
                     foreach ($attempts_t as $at) {
                         if (empty($at->txt)) {
                             continue;
                         }
-                        plagiarism_advacheck_add_to_queue_quiz_text($coursecontext, $modcontext, $plugin_cfg, $at, $courseid, $cmid);
+                        $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $at, $cmid, $data->course);
+                        $addtodocqueue->add_to_queue_quiz_text();
                     }
                 }
                 if (!empty($data->advacheck_checkfile)) {
-                    $sql = "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid
-                        FROM {question_attempts} qa 
-                        JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
-                        JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND asd.name = 'attachments'
-                        JOIN {question} q ON qa.questionid = q.id AND q.qtype = 'essay'
-                        JOIN {quiz_attempts} quiza ON quiza.uniqueid = qa.questionusageid
-                        WHERE quiza.quiz = ?";
+                    $sql =
+                        "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid
+                           FROM {question_attempts} qa 
+                           JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+                           JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND asd.name = 'attachments'
+                           JOIN {question} q ON qa.questionid = q.id AND q.qtype = 'essay'
+                           JOIN {quiz_attempts} quiza ON quiza.uniqueid = qa.questionusageid
+                          WHERE quiza.quiz = ?";
                     $attempts_f = $DB->get_records_sql($sql, [$instance]);
                     foreach ($attempts_f as $af) {
                         $attempt_files = get_file_storage()->get_area_files($modcontext->id, 'question', 'response_attachments', $af->id);
                         if (count($attempt_files) != 0) {
-                            plagiarism_advacheck_add_to_queue_file($attempt_files, $af, $modulename, $coursecontext, $courseid, $cmid);
+                            $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $af, $cmid, $data->course);
+                            $addtodocqueue->add_to_queue_file($attempt_files, $modulename);
                         }
                     }
                 }
@@ -1079,28 +970,17 @@ function plagiarism_advacheck_enable_plug($set_get, $val = 0)
         }
         set_config('enabled', $val, 'plagiarism_advacheck');
     }
+
 }
 
-/**
- * Returns html labels with info with an error or explanation.
- *
- * @param string $string
- * @param string $class
- * @return string
- */
-function plagiarism_advacheck_get_html_block_info($string, $class)
-{
-    $res = html_writer::div($string);
-    $class = "advacheck " . $class;
-    return html_writer::div(html_writer::div($res), $class);
-}
+
 
 /**
  * Adds a link to the navigation block.
  *
  * @param object $navigation
  * @param stdClass $course
- * @param context $context
+ * @param contextself::$context
  */
 function plagiarism_advacheck_extend_navigation_course($navigation, $course, $context)
 {

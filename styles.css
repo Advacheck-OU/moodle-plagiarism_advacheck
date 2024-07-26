@@ -8,22 +8,60 @@
     line-height: 110%;
 }
 
+.advacheck-plagiarismresult {
+    display: inline-block;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 80%;
+    line-height: 110%;
+}
+
 .advacheck-green {
+    display: inline-block;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 80%;
+    line-height: 110%;
     background-color: #dff0d8;
     border-color: #468847;
 }
 
 .advacheck-blue {
+    display: inline-block;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 80%;
+    line-height: 110%;
     background-color: #d9edf7;
     border-color: #b0b0b0;
 }
 
 .advacheck-red {
+    display: inline-block;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 80%;
+    line-height: 110%;
     background-color: #f2dede;
     border-color: #b94a48;
 }
 
 .advacheck-gray {
+    display: inline-block;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 80%;
+    line-height: 110%;
     background-color: #e5e5e5;
     border-color: #b0b0b0;
 }
@@ -37,15 +75,7 @@
     display: none;
 }
 
-.advacheck-originality {
-    display: none;
-}
-
 .advacheck-report {
-    display: none;
-}
-
-.advacheck-shortreport {
     display: none;
 }
 
@@ -61,20 +91,10 @@
     display: none;
 }
 
-.advacheck-help {
-    background-color: #e5e5e5;
-    border-color: #b0b0b0;
-    display: none;
-}
-
 .advacheck-suspiciousoff {
     display: none;
 }
 
 .advacheck-suspiciouson {
     display: inline-block;
-}
-
-.advacheck-suspicious {
-    display: none;
 }

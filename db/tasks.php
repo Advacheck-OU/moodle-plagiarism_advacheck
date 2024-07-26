@@ -23,8 +23,35 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'plagiarism_advacheck';
-$plugin->version = 2024072420;
-$plugin->requires = 2010042803;
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = '3.2.3';
+$tasks = [
+    [
+        'classname' => 'plagiarism_advacheck\task\upload_and_check_advacheck',
+        'blocking' => 0,
+        'minute' => '*/15',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+        'disabled' => 0,
+    ],
+    [
+        'classname' => 'plagiarism_advacheck\task\control_check_status_advacheck',
+        'blocking' => 0,
+        'minute' => '*',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+        'disabled' => 0,
+    ],
+    [
+        'classname' => 'plagiarism_advacheck\task\clear_action_log',
+        'blocking' => 0,
+        'minute' => '0',
+        'hour' => '4',
+        'day' => '*/7',
+        'month' => '*',
+        'dayofweek' => '*',
+        'disabled' => 0,
+    ],
+];

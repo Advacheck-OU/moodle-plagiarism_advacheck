@@ -19,15 +19,16 @@
  * @package  plagiarism
  * @subpackage advacheck
  * @copyright © 2023 onwards Advacheck OU
- * @copyright based on work by 1999 Martin Dougiamas {@link http://moodle.com}
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('AJAX_SCRIPT');
+use \plagiarism_advacheck\local\upload_start_check_manual;
+use \plagiarism_advacheck\local\advacheck_constants;
+
 require_once ('../../config.php');
+require_once 'classes/local/constants.php';
 // Setting the internal encoding to which the HTTP request input data will be converted.
 mb_internal_encoding("UTF-8");
-require_once ($CFG->dirroot . '/plagiarism/advacheck/lib.php');
-require_once ($CFG->dirroot . '/plagiarism/advacheck/locallib.php');
 
 $action = optional_param('action', '', PARAM_TEXT);
 $type = optional_param('doctype', '', PARAM_TEXT);
@@ -42,6 +43,8 @@ $discussion = optional_param("discussion", 0, PARAM_INT);
 $userid = optional_param("userid", 0, PARAM_INT);
 
 $course = $DB->get_record('course', ['id' => $courseid]);
+$coursecontext = context_course::instance($courseid, MUST_EXIST);
+
 require_login($course, false);
 
 if (!confirm_sesskey()) {
@@ -49,23 +52,41 @@ if (!confirm_sesskey()) {
 }
 
 // Checking the files.
-if (($action == "checkfile") && !empty($typeid)) {
-    $result = plagiarism_advacheck_start_file_verify($typeid, $courseid);
+if (($action == "checkfile") && !empty($typeid) && (has_capability('plagiarism/advacheck:checkedby', $coursecontext) || has_capability('plagiarism/advacheck:checkadvacheck', $coursecontext))) {
+    $docverfyobj = new upload_start_check_manual(
+        $typeid,
+        $courseid,
+        $doctype,
+        $content,
+        $userid,
+        $assignment,
+        $discussion
+    );
+    $result = $docverfyobj->start_file_verify();
     echo json_encode($result);
     exit;
 }
 // Checking the text.
-if (($action == "checktext") && !empty($typeid) && !empty($content)) {
-    $content = hex2bin($content);
-    $result = plagiarism_advacheck_start_text_verify($typeid, $content, $courseid, $userid, $assignment, $discussion, $doctype);
+if (($action == "checktext") && !empty($typeid) && !empty($content) && !empty($typeid) && (has_capability('plagiarism/advacheck:checkedby', $coursecontext) || has_capability('plagiarism/advacheck:checkadvacheck', $coursecontext))) {
+
+    $docverfyobj = new upload_start_check_manual(
+        $typeid,
+        $courseid,
+        $doctype,
+        $content,
+        $userid,
+        $assignment,
+        $discussion
+    );
+    $result = $docverfyobj->start_text_verify();
     echo json_encode($result);
     exit;
 }
 
 // Changing the verification mode.
-if ($action == "changeMode") {
+if ($action == "changeMode" && has_capability('plagiarism/advacheck:manage', $coursecontext)) {
     $cm = optional_param('cm', 0, PARAM_INT);
-    $mode = optional_param('mode', PLAGIARISM_ADVACHECK_DISABLEDMODE, PARAM_INT);
+    $mode = optional_param('mode', advacheck_constants::PLAGIARISM_ADVACHECK_DISABLEDMODE, PARAM_INT);
     $course = $DB->get_field('course_modules', 'course', ['id' => $cm]);
     if ($cm && $course) {
         if ($DB->record_exists('plagiarism_advacheck_course', ['courseid' => $course, 'cmid' => $cm])) {
@@ -81,45 +102,77 @@ if ($action == "changeMode") {
     exit;
 }
 // Changing other module settings.
-if ($action == "changetype") {
-    $cm = optional_param('cm', 0, PARAM_INT);
+if ($action == "changetype" && has_capability('plagiarism/advacheck:manage', $coursecontext)) {
     $type = optional_param('doctype', '', PARAM_TEXT);
-    $value = optional_param('value', 0, PARAM_TEXT);
-    $course = $DB->get_field('course_modules', 'course', ['id' => $cm]);
-    if ($cm && $course && $type) {
-        if ($DB->record_exists('plagiarism_advacheck_course', ['courseid' => $course, 'cmid' => $cm])) {
-            $DB->set_field('plagiarism_advacheck_course', $type, $value, ['courseid' => $course, 'cmid' => $cm]);
-        } else {
-            $row = new stdClass();
-            $row->courseid = $course;
-            $row->cmid = $cm;
-            $row->{$type} = $value;
-            $DB->insert_record('plagiarism_advacheck_course', $row);
+    if (in_array($type, array_keys($DB->get_columns('plagiarism_advacheck_course')))) {
+        $cm = optional_param('cm', 0, PARAM_INT);
+        $value = optional_param('value', 0, PARAM_TEXT);
+        $course = $DB->get_field('course_modules', 'course', ['id' => $cm]);
+        if ($cm && $course && $type) {
+            if ($DB->record_exists('plagiarism_advacheck_course', ['courseid' => $course, 'cmid' => $cm])) {
+                $DB->set_field('plagiarism_advacheck_course', $type, $value, ['courseid' => $course, 'cmid' => $cm]);
+            } else {
+                $row = new stdClass();
+                $row->courseid = $course;
+                $row->cmid = $cm;
+                $row->{$type} = $value;
+                $DB->insert_record('plagiarism_advacheck_course', $row);
+            }
         }
+    } else {
+
     }
 
     exit;
 }
 // Checking the tariff.
-if ($action == 'checktarif') {
+if ($action == 'checktarif' && has_capability('plagiarism/advacheck:manage', $coursecontext)) {
     $login = optional_param('login', '', PARAM_TEXT);
     $password = optional_param('password', '', PARAM_TEXT);
     $soap_wsdl = optional_param('soap_wsdl', '', PARAM_TEXT);
     $url = optional_param('uri', '', PARAM_TEXT);
     if ($login == '' || $password == '' || $soap_wsdl == '' || $url == '') {
-        $error = new stdClass();
-        $error->message = '<div class="alert alert-danger alert-block fade in  alert-dismissible"><button type="button" class="close" data-dismiss="alert">×</button>';
-        $error->message .= get_string('error_login', 'plagiarism_advacheck') . "</div>";
-        echo json_encode($error);
+        $data = [
+            'info' => get_string('error_login', 'plagiarism_advacheck'),
+        ];
+        echo json_encode($OUTPUT->render_from_template('plagiarism_advacheck/tarifinfoerror', $data));
+        exit;
     } else {
-        echo json_encode(plagiarism_advacheck_get_advacheck_tarif_info_html($login, $password, $soap_wsdl, $url));
+        // Structure for sending a response to a page.
+        $tariff_info_html = new stdClass();
+        $tariff_info = plagiarism_advacheck\local\advacheck_api::check_tarif($login, $password, $soap_wsdl);
+
+        if (!empty($tariff_info->error)) {
+            $a = $tariff_info->error;
+            $data = [
+                'info' => get_string('error_check', 'plagiarism_advacheck', $a),
+            ];
+            echo json_encode($OUTPUT->render_from_template('plagiarism_advacheck/tarifinfoerror', $data));
+            exit;
+        }
+
+        if ($tariff_info->tarif->TotalChecksCount == '') {
+            $tariff_info->tarif->TotalChecksCount = get_string('totalcheckscount_unlimited', 'plagiarism_advacheck');
+        }
+
+        if ($tariff_info->tarif->RemainedChecksCount == '') {
+            $tariff_info->tarif->RemainedChecksCount = get_string('remainedcheckscount_unlimited', 'plagiarism_advacheck');
+        }
+
+        $data = [
+            'tarif' => $tariff_info->tarif,
+            'url' => $url,
+            'serviceslist' => $tariff_info->tarif->CheckServices->CheckServiceInfo,
+        ];
+
+        echo json_encode($OUTPUT->render_from_template('plagiarism_advacheck/tarifinfo', $data));
     }
     exit;
 }
 // Updated the link to the report.
-if ($action == 'update_report') {
+if ($action == 'update_report' && has_capability('plagiarism/advacheck:updatereport', $coursecontext)) {
     $typeid = optional_param('typeid', '', PARAM_TEXT);
-    $link = plagiarism_advacheck_update_advacheck_report($typeid);
+    $link = upload_start_check_manual::update_advacheck_report($typeid);
     echo json_encode($link);
     exit;
 }
