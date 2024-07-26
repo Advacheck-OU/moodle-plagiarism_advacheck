@@ -18,18 +18,21 @@
  * The class responsible for adding documents to the queue for upload 
  * for verification in the case when the verification plugin was enabled 
  * after students added their answers to the course module.
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace plagiarism_advacheck\local;
 
-use \plagiarism_advacheck\eventobservers;
+use plagiarism_advacheck\eventobservers;
 
 require_once "constants.php";
 require_once "$CFG->dirroot/plagiarism/advacheck/classes/eventobservers.php";
+
+/**
+ * A class that adds documents to the verification queue.
+ */
 class document_queue_manager
 {
     /**For course context */
@@ -45,6 +48,14 @@ class document_queue_manager
     /**For course module id */
     private $cmid;
 
+    /**
+     * Get parametrs and settings
+     * @param mixed $crs_ctxt Course context
+     * @param mixed $mod_ctxt Coursemodule context
+     * @param mixed $answertextobject Object with answer text
+     * @param mixed $cmid Id of coursemodule
+     * @param mixed $courseid Id of course
+     */
     public function __construct($crs_ctxt, $mod_ctxt, $answertextobject, $cmid, $courseid)
     {
         $this->crs_ctxt = $crs_ctxt;
@@ -476,6 +487,7 @@ class document_queue_manager
             if (!$f || $f->is_directory()) {
                 continue;
             }
+
             // If an entry with such a file ID, such a user, and such a document type is already in the queue, then we will not add it.
             $rec = $DB->get_record(
                 'plagiarism_advacheck_docs',
@@ -484,6 +496,7 @@ class document_queue_manager
             if ($rec) {
                 continue;
             }
+            file_put_contents(__DIR__ . '/debug.log', 'kot15' . PHP_EOL, FILE_APPEND);
             $filetype = substr(strrchr($f->get_filename(), "."), 1) . ',';
             // Check the file extension for valid file types to scan.
             if (eventobservers::is_allow_file_type($filetype) === false) {
@@ -500,6 +513,7 @@ class document_queue_manager
                     $this->courseid,
                     $this->cmid
                 );
+                file_put_contents(__DIR__ . '/debug.log', 'kot2' . PHP_EOL, FILE_APPEND);
                 continue;
             }
             if (eventobservers::can_not_checked_by($this->crs_ctxt, $f->get_userid())) {

@@ -16,8 +16,7 @@
 
 /**
  * Uploading and sending documents for verification.
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

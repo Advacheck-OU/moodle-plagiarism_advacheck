@@ -16,19 +16,22 @@
 
 /**
  * Class for working with the Anti-Plagiarism API
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace plagiarism_advacheck\local;
 
+/**
+ * API to connect check services
+ */
 class advacheck_api
 {
 
     /**
      * Object with connection.
+     * @var \SoapClient
      */
     private $client;
     /**
@@ -57,7 +60,6 @@ class advacheck_api
      * @param string $login
      * @param string $password
      * @param string $soap_wsdl
-     * @param string $url
      * @return \stdClass
      */
     public static function check_tarif($login, $password, $soap_wsdl)

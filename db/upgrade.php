@@ -16,12 +16,16 @@
 
 /**
  *
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/**
+ * Summary of xmldb_plagiarism_advacheck_upgrade
+ * @param mixed $oldversion
+ * @return bool
+ */
 function xmldb_plagiarism_advacheck_upgrade($oldversion)
 {
     global $DB, $CFG, $OUTPUT;
@@ -92,17 +96,17 @@ function xmldb_plagiarism_advacheck_upgrade($oldversion)
             $dbman->rename_table($table, 'plagiarism_advacheck_act_log');
         }
 
-        // If exist view plagiarism_advacheck_log_view, then delete it so that there are no errors in the DB/ 
+        // If exist view plagiarism_advacheck_log_view, then delete it so that there are no errors in the DB.
         if ($CFG->dbtype == 'sqlsrv') {
             $sql = "SELECT OBJECT_ID('{plagiarism_advacheck_log_view}')AS exist";
             $view = $DB->get_record_sql($sql);
             if ($view->exist) {
-                $delete_view = "DROP VIEW {plagiarism_advacheck_log_view}";
-                $DB->execute($delete_view);
+                $deleteview = "DROP VIEW {plagiarism_advacheck_log_view}";
+                $DB->execute($deleteview);
             }
         } else {
-            $delete_view = "DROP VIEW IF EXISTS {plagiarism_advacheck_log_view}";
-            $DB->execute($delete_view);
+            $deleteview = "DROP VIEW IF EXISTS {plagiarism_advacheck_log_view}";
+            $DB->execute($deleteview);
         }
 
         // Apgtru savepoint reached.

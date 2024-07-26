@@ -16,8 +16,7 @@
 
 /**
  * Class for working with the Anti-Plagiarism API
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -25,6 +24,10 @@
 namespace plagiarism_advacheck\local;
 
 require_once "constants.php";
+
+/**
+ * A class that uploads and sends documents for verification in manual mode
+ */
 class upload_start_check_manual
 {
 

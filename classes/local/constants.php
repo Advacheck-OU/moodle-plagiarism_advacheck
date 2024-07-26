@@ -16,13 +16,15 @@
 
 /**
  * A file with constants
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace plagiarism_advacheck\local;
 
+/**
+ * Class with constants
+ */
 class advacheck_constants
 {
     // 2 - Check in automatic mode AUTO.

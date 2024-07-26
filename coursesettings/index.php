@@ -16,15 +16,15 @@
 
 /**
  * Check settings page for the course for all modules.
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 require_once ('../../../config.php');
 require_once ($CFG->dirroot . '/plagiarism/advacheck/lib.php');
 
-use \plagiarism_advacheck\local\advacheck_constants;
+use plagiarism_advacheck\local\advacheck_constants;
 
 $id = optional_param('courseid', 0, PARAM_INT);
 $course = $DB->get_record('course', ['id' => $id], '*', MUST_EXIST);

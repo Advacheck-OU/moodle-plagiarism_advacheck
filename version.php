@@ -16,15 +16,14 @@
 
 /**
  *
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'plagiarism_advacheck';
-$plugin->version = 2024072420;
+$plugin->version = 2024072621;
 $plugin->requires = 2010042803;
 $plugin->maturity = MATURITY_STABLE;
 $plugin->release = '3.2.3';

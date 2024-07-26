@@ -16,13 +16,16 @@
 
 /**
  * Class for working recording log of action with documents
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace plagiarism_advacheck\local;
+
+/**
+ * A class that records verification events to investigate incidents.
+ */
 
 class queue_log_manager
 {

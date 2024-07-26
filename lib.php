@@ -16,8 +16,7 @@
 
 /**
  * Functions for working with API Moodle.
- * @package  plagiarism
- * @subpackage advacheck
+ * @package  plagiarism_advacheck
  * @copyright © 2023 onwards Advacheck OU
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -34,24 +33,63 @@ require_once ($CFG->dirroot . '/plagiarism/lib.php');
 require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/local/constants.php');
 require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/local/document_queue_manager.php');
 
+/**
+ * A class that adds verification results, a block with information, or a button to send for verification.
+ */
 class plagiarism_plugin_advacheck extends plagiarism_plugin
 {
 
-    /** Course module plagiarism advacheck settings. */
+    /** @var mixed module plagiarism advacheck settings. */
     public static $cnfg = null;
-    /** Common lagiarism advacheck settings. */
+    /** @var mixed Common lagiarism advacheck settings. */
     public static $plugin_cfg = null;
     private static $docrecords = [];
-    /** flag - is first load or no*/
+    /** @var bool flag - is first load or no*/
     private static $firstload = true;
+    /** 
+     * Course object
+     * @var object
+     */
     private static $course;
+    /**
+     * Id of course
+     * @var int
+     */
     private static $courseid;
+    /**
+     * Context object
+     * @var object
+     */
     private static $context;
+    /**
+     * Coursemodule object
+     * @var object
+     */
     private static $cm;
+    /**
+     * Id of coursemodule
+     * @var int
+     */
     private static $cmid;
+    /**
+     * Id of document`s user
+     * @var 
+     */
     private static $userid;
+    /**
+     * Is the site admin.
+     * @var bool
+     */
     private static $siteadmin;
+    /**
+     * Type of document
+     * @var int
+     */
     private static $doctype;
+    /**
+     * Require students to click the submit button
+     * @var bool
+     */
     private static $submissiondrafts;
 
     /**
@@ -842,10 +880,7 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
                           WHERE fd.forum = ?";
                     $posts = $DB->get_records_sql($sql, [$instance]);
                     foreach ($posts as $p) {
-                        if (empty($p->message)) {
-                            continue;
-                        }
-                        if (!empty($data->advacheck_checktext)) {
+                        if (!empty($data->advacheck_checktext) && !empty($p->message)) {
                             $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $p, $cmid, $data->course);
                             $addtodocqueue->add_to_queue_forum_text();
                         }
@@ -867,10 +902,7 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
                       WHERE sub.assignment = ?";
                 $subs = $DB->get_records_sql($sql, [$instance]);
                 foreach ($subs as $s) {
-                    if (empty($s->txt)) {
-                        continue;
-                    }
-                    if (!empty($data->advacheck_checktext)) {
+                    if (!empty($data->advacheck_checktext) && !empty($s->txt)) {
                         $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $s, $cmid, $data->course);
                         $addtodocqueue->add_to_queue_assign_text();
                     }
@@ -888,10 +920,7 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
                       WHERE sub.workshopid = ?";
                 $subs = $DB->get_records_sql($sql, [$instance]);
                 foreach ($subs as $s) {
-                    if (empty($s->txt)) {
-                        continue;
-                    }
-                    if (!empty($data->advacheck_checktext)) {
+                    if (!empty($data->advacheck_checktext) && !empty($s->txt)) {
                         $addtodocqueue = new document_queue_manager($coursecontext, $modcontext, $s, $cmid, $data->course);
                         $addtodocqueue->add_to_queue_workshop_text();
                     }
