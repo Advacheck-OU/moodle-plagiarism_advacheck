@@ -20,7 +20,7 @@ After setting permissions in the database for the Moodle user, the plugin can be
 
 After installing the plugin, make sure that enableplagiarism parameter is enabled in Moodle settings (Administration - Advanced features - Enable plagiarism plugins).
 
-Then go to Administration - Plugins - Plagiarism - Moodle-Advacheck Module and enable our plugin (check Enable the Moodle-Advacheck Module).
+Then go to Administration - Plugins - Plagiarism - Advacheck and enable our plugin (check Enable the Advacheck).
 
 After that you can configure the plugin according to the credentials obtained on [our site](https://advacheck.com) or activate the test connection by setting the default settings.
 Detailed instructions for configuring the plugin are available on [our website](https://manual.advacheck.com/main/docs/advacheck_plugin_documentation.pdf#%5B%7B%22num%22%3A32%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C33%2C805%2C0%5D).
