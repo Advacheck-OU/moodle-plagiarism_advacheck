@@ -23,7 +23,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once ($CFG->dirroot . "/plagiarism/advacheck/lib.php");
-
+/**
+ * Deletes all tables and plugin settings.
+ * @return bool
+ */
 function xmldb_plagiarism_advacheck_uninstall()
 {
     global $DB, $CFG;

@@ -22,7 +22,7 @@
  */
 
 /**
- * Summary of xmldb_plagiarism_advacheck_upgrade
+ * Updates and modifies the plugin's table structures.
  * @param mixed $oldversion
  * @return bool
  */

@@ -73,7 +73,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
     private static $cmid;
     /**
      * Id of document`s user
-     * @var 
+     * @var int
      */
     private static $userid;
     /**
@@ -94,7 +94,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
 
     /**
      * Hook to allow plagiarism specific information to be displayed beside a submission.
-     * @param array $linkarraycontains all relevant information for the plugin to generate a link
+     * @param array $linkarray all relevant information for the plugin to generate a link
      * @return string
      *
      */
@@ -111,13 +111,14 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
 
         if (self::$firstload) {
             // Loaded the plugin settings and added JS to the page.
-            // проверить, что js подгружется для каждого текста и файла
             $this->_preLoad($linkarray);
             self::$firstload = false;
         }
 
-        $file = isset($linkarray['file']) ? $linkarray['file'] : null;// file object
-        $content = isset($linkarray['content']) ? document_queue_manager::get_strip_text_content_hash($linkarray['content'], true) : null;//  clean text content
+        // File object.
+        $file = isset($linkarray['file']) ? $linkarray['file'] : null;
+        // Clean text content.
+        $content = isset($linkarray['content']) ? document_queue_manager::get_strip_text_content_hash($linkarray['content'], true) : null;
 
         // If the check is not enabled, it returns an empty string.
         if (empty(self::$cnfg->mode)) {
@@ -182,7 +183,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
             $typeid2 = sha1($linkarray['content']);
             $data = isset(self::$docrecords["$doctype-$typeid2-" . self::$userid]) ? self::$docrecords["$doctype-$typeid2-" . self::$userid] : false;
             if ($data) {
-                // Write new hash
+                // Write new hash.
                 $DB->set_field('plagiarism_advacheck_docs', 'typeid', $typeid, ['id' => $data->id]);
             }
         }
@@ -373,8 +374,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
      *
      * @global moodle_page $PAGE
      * @global moodle_database $DB
-     * @param int $cmid
-     * @param int $courseid
+     * @param array $linkarray
      */
     private function _preLoad($linkarray)
     {
@@ -435,7 +435,6 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
      *
      * @global object $OUTPUT
      * @param stdClass $data Structure with test results.
-     * @param contextself::$context
      * @return string
      */
     private function get_result_html($data)
@@ -542,11 +541,11 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
     /**
      * Collects the html code of the submit button for review.
      *
-     * @param bool $checkcap
-     * @param int $doctype
-     * @param string $content
-     * @param string $hash
-     * @param int $docid
+     * @param bool $checkcap Rights for submit to check.
+     * @param int $doctype Type of docs
+     * @param string $content Content of text answer
+     * @param string $typeid Sha1-hash or fileid
+     * @param int $docid Id document in queue
      * @return string
      */
     private function get_check_button_html(
@@ -608,7 +607,8 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
     /**
      * Matches string names of course module type and numeric constants and vice versa
      *
-     * @param mixed $mod
+     * @param mixed $mod type of course module in int or string.
+     * @param bool $rev Reversive.
      * @return mixed
      */
     private function get_module_type_by_name($mod, $rev = true)
@@ -1002,14 +1002,12 @@ function plagiarism_advacheck_enable_plug($set_get, $val = 0)
 
 }
 
-
-
 /**
  * Adds a link to the navigation block.
  *
  * @param object $navigation
  * @param stdClass $course
- * @param contextself::$context
+ * @param context $context
  */
 function plagiarism_advacheck_extend_navigation_course($navigation, $course, $context)
 {

@@ -26,7 +26,7 @@ namespace plagiarism_advacheck;
 
 use context;
 use context_course;
-use \plagiarism_advacheck\local\advacheck_constants;
+use plagiarism_advacheck\local\advacheck_constants;
 
 require_once "local/constants.php";
 
@@ -992,6 +992,7 @@ class eventobservers
      * @param int $objectid message/reply ID.
      * @param int $userid
      * @param string $doctype Document type: file/assignment/forum/essay/workshop.
+     * @param int Id of quiz.
      */
     private static function delete_prev($component, $compid, $objectid, $userid, $doctype, $quizid = 0)
     {

@@ -30,15 +30,17 @@ class advacheck_api
 {
 
     /**
-     * Object with connection.
-     * @var \SoapClient
+     * @var \SoapClient Object with connection.
      */
     private $client;
     /**
-     *  Developer's certificate from the Advacheck (AP). Without it, the server will not accept the document.
-     * */
+     * @var string Developer's certificate from the Advacheck (AP). Without it, the server will not accept the document.
+     */
     private $developerid = 'b5a00098-9691-494a-b56b-b1a3e846c3c3';
 
+    /**
+     * Gets the settings and creates an object to connect to the verification server.
+     */
     public function __construct()
     {
         $settings = get_config('plagiarism_advacheck');

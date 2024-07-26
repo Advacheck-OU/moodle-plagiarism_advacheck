@@ -31,39 +31,56 @@ require_once "constants.php";
 class upload_start_check_manual
 {
 
-    /**Object to connect external service */
+    /**
+     * @var mixed Object to connect external service 
+     */
     private $api;
-    /**Record of document from db */
+    /** 
+     * @var mixed Record of document from db 
+     * */
     private $docrecord;
-    /**Plugin configuration */
+    /** 
+     * @var mixed Plugin configuration 
+     */
     private $plugin_cfg;
-    /**For id of uploaded document from external system*/
+    /**
+     * @var mixed For id of uploaded document from external system*/
     private $ap_docid;
-    /**Structure for displaying test results on the course module page. */
+    /** @var mixed Structure for displaying test results on the course module page. */
     private $api_data;
-    /**Object with course context */
+    /** @var mixed Object with course context */
     private $context;
     private $courseid;
-    /**Content of answer`s text / file */
+    /** @var mixed Content of answer`s text / file */
     private $content;
     private $userid;
-    /**Fileid from db / sha-hash of answer`s text */
+    /** @var mixed Fileid from db / sha-hash of answer`s text */
     private $typeid;
-    /**Additional upload fields of document */
+    /** @var mixed Additional upload fields of document */
     private $data_attr;
-    /**Type of document file or text from assign submittion/forum post/workshop submittion/ quiz essay*/
+    /** @var mixed Type of document file or text from assign submittion/forum post/workshop submittion/ quiz essay*/
     private $doctype;
-    /**Id of forum discussion */
+    /** @var mixed Id of forum discussion */
     private $discussion;
-    /**Id of assignment */
+    /** @var mixed Id of assignment */
     private $assignment;
     private $filename = '';
-    /**The length of the text/file content is longer than the minimum allowed. */
+    /** @var mixed The length of the text/file content is longer than the minimum allowed. */
     private $islongstr;
-    /**Html of verify result */
+    /** @var mixed Html of verify result */
     private $result;
-    /**Object to recording log */
+    /** @var mixed Object to recording log */
     private $logobject;
+    /** 
+     * Saves settings and various data.
+     * @var mixed $typeid Sha-1 hash or fileid
+     * @var mixed $courseid Id of course
+     * @var mixed $doctype Type of document
+     * @var mixed $content Clear text content
+     * @var mixed $userid Id of document`s user
+     * @var mixed $assignment Id of assignment
+     * @var mixed $discussion Id of discussion
+     */
 
     public function __construct(
         $typeid,
@@ -871,6 +888,7 @@ class upload_start_check_manual
      * Returns a structure to display the error-block or info-block.
      *
      * @param string $msg
+     * @param string $class Class of displaied block.
      * @return \stdClass
      */
     private function get_error_structure($msg, $class = "advacheck-red")
@@ -1075,11 +1093,6 @@ class upload_start_check_manual
      * Handles an error PLAGIARISM_ADVACHECK_ERROR_CHECKING
      *
      * @global \moodle_database $DB
-     * @param \stdClass $this->api_data Structure for document information from AP.
-     * @param \stdClass $this->ap_docid Structure with ID in the Antiplagiarism system.
-     * @param \stdClass $data Recording a document in the database.
-     * @param advacheck_api $this->api
-     * @param \stdClass $result To record information about errors.
      * @return boolean true - in case of success, false - in case of errors
      */
     function start_check_manual()
@@ -1264,6 +1277,7 @@ class upload_start_check_manual
      *
      * @param float $plagiarism
      * @param float $legal
+     * @param float $selfcite
      * @param float $originality
      */
     public static function calc_orig(&$plagiarism, &$legal, &$selfcite, &$originality)
