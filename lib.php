@@ -799,7 +799,7 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
     global $DB;
     $plugin_cfg = get_config('plagiarism_advacheck');
 
-    if (!empty($plugin_cfg->enabled)) {
+    if (empty($plugin_cfg->enabled)) {
         return $data;
     }
 
