@@ -29,9 +29,9 @@ use \plagiarism_advacheck\local\document_queue_manager;
 
 // Get global class.
 global $CFG;
-require_once ($CFG->dirroot . '/plagiarism/lib.php');
-require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/local/constants.php');
-require_once ($CFG->dirroot . '/plagiarism/advacheck/classes/local/document_queue_manager.php');
+require_once($CFG->dirroot . '/plagiarism/lib.php');
+require_once($CFG->dirroot . '/plagiarism/advacheck/classes/local/constants.php');
+require_once($CFG->dirroot . '/plagiarism/advacheck/classes/local/document_queue_manager.php');
 
 /**
  * A class that adds verification results, a block with information, or a button to send for verification.
@@ -799,7 +799,7 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
     global $DB;
     $plugin_cfg = get_config('plagiarism_advacheck');
 
-    if (!$plugin_cfg->enabled) {
+    if (!empty($plugin_cfg->enabled)) {
         return $data;
     }
 
