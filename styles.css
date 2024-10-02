@@ -92,9 +92,9 @@
 }
 
 .advacheck-suspiciousoff {
-    display: none;
+    display: none !important;
 }
 
 .advacheck-suspiciouson {
-    display: inline-block;
+    display: inline-block !important;
 }

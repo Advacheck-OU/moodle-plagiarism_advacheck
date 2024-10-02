@@ -72,8 +72,8 @@ define(['jquery', 'core/tree'], function ($) {
                 $(".advacheck-checkbtn." + typeid).hide();
                 // Show the loader img
                 $(".advacheck-loader." + typeid).removeClass("advacheck-hidden");
-                $(".advacheck-data.advacheck-green.checking." + typeid).css("display", "inline-grid");
-                $(".advacheck-data.advacheck-green.checking." + typeid).show();
+                $(".advacheck-data.advacheck-gray.checking." + typeid).css("display", "inline-grid");
+                $(".advacheck-data.advacheck-gray.checking." + typeid).show();
 
                 $.ajax({
                     url: M.cfg.wwwroot + "/plagiarism/advacheck/ajax.php",
@@ -136,7 +136,7 @@ define(['jquery', 'core/tree'], function ($) {
                 if (data.status == 4 || data.status == 5) {
                     // Hide progress circle
                     $(".advacheck-loader." + typeid).addClass("advacheck-hidden");
-                    $(".advacheck-data.advacheck-green.checking." + typeid).hide();
+                    $(".advacheck-data.advacheck-gray.checking." + typeid).hide();
                     // Hide info block
                     $("check_notice." + typeid).hide();
 
@@ -167,6 +167,12 @@ define(['jquery', 'core/tree'], function ($) {
                     }
                     // Link to report
                     if (data.report) {
+                        var title = $(".advacheck-plagiarismresult." + typeid).attr('title');
+                        title = title.replace("{$a->plagiarism}%", data.plagiarism);
+                        title = title.replace("{$a->selfcite}%", data.selfcite);
+                        title = title.replace("{$a->originality}%", data.originality);
+                        title = title.replace("{$a->legal}%", data.legal);
+                        var title = $(".advacheck-plagiarismresult." + typeid).attr('title', title);
                         $(".advacheck-report-" + typeid).attr('href', data.report).show();
                     }
                     // Help icon
@@ -186,7 +192,7 @@ define(['jquery', 'core/tree'], function ($) {
                 } else if (data.error) {
                     // Hide progress circle
                     $(".advacheck-loader." + typeid).addClass("advacheck-hidden");
-                    $(".advacheck-data.advacheck-green.checking." + typeid).hide();
+                    $(".advacheck-data.advacheck-gray.checking." + typeid).hide();
                     // Hide check button
                     $(".advacheck." + typeid).addClass("advacheck-hidden");
                     // Show info about error
@@ -209,7 +215,7 @@ define(['jquery', 'core/tree'], function ($) {
             } catch (e) {
                 // Hide progress circle
                 $(".advacheck-loader." + typeid).addClass("advacheck-hidden");
-                $(".advacheck-data.advacheck-green.checking." + typeid).hide();
+                $(".advacheck-data.advacheck-gray.checking." + typeid).hide();
                 // Hide check button
                 $(".advacheck." + typeid).addClass("advacheck-hidden");
                 // Show info about error

@@ -22,7 +22,7 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-require_once ($CFG->dirroot . '/lib/formslib.php');
+require_once($CFG->dirroot . '/lib/formslib.php');
 
 class plagiarism_advacheck_settings_form extends moodleform
 {
@@ -118,7 +118,7 @@ class plagiarism_advacheck_settings_form extends moodleform
                         'name' => "test_tarif",
                         'type' => "button",
                         'value' => get_string('test_tarif', 'plagiarism_advacheck'),
-                        'class' => "test-tarif"
+                        'class' => "test-tarif btn btn-primary",
                     ]
                 );
                 $mform->addElement('static', 'test_tarif_static', '', $html_btn);
