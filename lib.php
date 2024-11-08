@@ -203,16 +203,17 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                             // For the teacher: You should be prohibited from changing the answer.
                             $msg = get_string('wait_block_submissiondrafts_no', 'plagiarism_advacheck');
                         }
-                        $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $msg, 'infoclass' => 'advacheck-blue']);
+                        $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $msg]);
                     } else {
                         // Information for students: let's check the limit of checks and how many have been checked.
                         if ((int) $data->stud_check >= (int) self::$cnfg->check_stud_lim) {
                             $infostring = get_string('stud_not_check', 'plagiarism_advacheck');
-                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-gray']);
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                         } else {
                             $c = (int) self::$cnfg->check_stud_lim - (int) $data->stud_check;
                             $infostring = get_string('stud_check', 'plagiarism_advacheck', $c);
-                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-gray']);
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
+                            $output = html_writer::tag('p', $output);
                             // Receive html buttons for sending for verification.
                             $output .= $this->get_check_button_html(
                                 true,
@@ -238,17 +239,17 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                         $a->s = $t - $a->i * 60;
                         $a->t = date('H:i', $a->t + (int) $CFG->maxeditingtime);
                         $infostring = get_string('edit_time', 'plagiarism_advacheck', $a);
-                        $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-gray']);
+                        $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     } else if (!$checkcap && $data->workshop != 0) {
                         // At the workshop, just like in the assignment, if the check limit for a student has not been reached, then we display a button.
                         if ((int) $data->stud_check >= (int) self::$cnfg->check_stud_lim) {
                             $infostring = get_string('stud_not_check', 'plagiarism_advacheck');
-                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-gray']);
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                         } else {
                             $c = (int) self::$cnfg->check_stud_lim - (int) $data->stud_check;
                             $infostring = get_string('stud_check', 'plagiarism_advacheck', $c);
-                            $class = "advacheck-gray stud_check-$typeid";
-                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => $class]);
+                            $addclass = "stud_check-$typeid";
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring, 'addclass' => $addclass]);
 
                             // Receive html buttons for sending for verification.
                             $output .= $this->get_check_button_html(
@@ -261,14 +262,14 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                         }
                     } else { // If the editing time has expired and automatic checking is enabled, then display the corresponding information.                        
                         if (self::$cnfg->mode == advacheck_constants::PLAGIARISM_ADVACHECK_AUTOMODE) {
-                            $class = "check_notice $typeid advacheck-gray";
+                            $class = "check_notice $typeid";
                             $infostring = get_string('wait_upload', 'plagiarism_advacheck', '');
-                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => $class]);
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring, 'addclass' => $class]);
                         } else if (!$checkcap) {
                             // Information for students about the end of the check limit.
-                            $class = "check_notice $typeid advacheck-gray";
+                            $class = "check_notice $typeid";
                             $infostring = get_string('stud_not_check', 'plagiarism_advacheck');
-                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => $class]);
+                            $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring, 'addclass' => $class]);
                         }
                         if ($checkcap) {
                             $output .= $this->get_check_button_html(
@@ -284,18 +285,16 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 // The document is in the process of being uploaded.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_UPLOADING:
                     $infostring = get_string('uploading', 'plagiarism_advacheck');
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-gray']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // The document has been uploaded.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_UPLOADED:
                     $infostring = get_string('uploaded', 'plagiarism_advacheck');
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-gray']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // The document is in the process of being reviewed.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_CHECKING:
                     // Animation of the verification process.
-                    $infostring = get_string('checking', 'plagiarism_advacheck');
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-gray']);
                     $data = [
                         'typeid' => $typeid,
                         'hidden' => '',
@@ -307,7 +306,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 // Insufficient number of words.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_LESSNWORDS:
                     // Display a message at the time of queuing, because the number of words could have changed.                    
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $data->error, 'infoclass' => 'advacheck-gray']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $data->error]);
                     break;
                 // There is no right to be verified - we don’t show anything, for example, a teacher’s answer on the forum.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_NORIGHTCHECKEDBY:
@@ -315,37 +314,37 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                     break;
                 case advacheck_constants::PLAGIARISM_ADVACHECK_INVALIDFILETYPE:
                     $infostring = get_string('uploaded', 'plagiarism_advacheck');
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // Error when trying to upload.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_UPLOADING:
                     $infostring = get_string('error_upload', 'plagiarism_advacheck', $data->error);
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // Error when initiating document verification.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_CHECKING:
                     $infostring = get_string('error_checking', 'plagiarism_advacheck', $data->error);
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring,]);
                     break;
                 // An error occurred during the verification process.   
                 case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_CHECK:
                     $infostring = get_string('error_check', 'plagiarism_advacheck', $data->error);
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // Error when trying to get status.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_GET_STATUS:
                     $infostring = get_string('error_get_status', 'plagiarism_advacheck', $data->error);
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // When trying to get a report.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_GET_REPORT:
                     $infostring = get_string('error_get_report', 'plagiarism_advacheck', $data->error);
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // Error when trying to add/remove to index.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_INDEX:
                     $infostring = get_string('error_index', 'plagiarism_advacheck', $data->error);
-                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
+                    $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // In other cases, we display the results of the check.
                 default:
@@ -357,7 +356,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
             // We show the message only to those who have the right to check documents.
             if ($checkcap) {
                 $infostring = get_string('not_in_queue', 'plagiarism_advacheck');
-                $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfo', ['infostring' => $infostring, 'infoclass' => 'advacheck-red']);
+                $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
             }
         }
 
@@ -504,10 +503,16 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
 
         // Get class to fill block with check result
         $class = "";
+        $iconclass = "";
+        $icontype = "";
         if ($orig >= self::$plugin_cfg->originality_limit) {
             $class .= " advacheck-green";
+            $iconclass .= "advacheck-green_icon";
+            $icontype .= "fa-solid fa-circle-check";
         } else {
             $class .= " advacheck-red";
+            $iconclass .= "advacheck-red_icon";
+            $icontype .= "fa-solid fa-circle-exclamation";
         }
 
         // Html of button to download certificate about check.
@@ -533,6 +538,8 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
             'suspiciouslnkhref' => $link,
             'suspicioustoggleclass' => $suspicioustoggleclass,
             'plagiarismresulthelp' => $plagiarismresulthelp,
+            'coloricon' => $iconclass,
+            'icontype' => $icontype,
 
         ];
         $output = $OUTPUT->render_from_template('plagiarism_advacheck/plagiarismresult', $data);
@@ -589,6 +596,8 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 'suspiciouslnkhref' => '#',
                 'suspicioustoggleclass' => 'advacheck-suspiciousoff',
                 'plagiarismresulthelp' => $plagiarismresulthelp,
+                'hidden' => 'advacheck-hidden',
+                'icontype' => 'invisibleicon',
 
             ];
             $plagiarismresult = $OUTPUT->render_from_template('plagiarism_advacheck/plagiarismresult', $data);

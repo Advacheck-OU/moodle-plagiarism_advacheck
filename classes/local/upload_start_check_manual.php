@@ -434,7 +434,7 @@ class upload_start_check_manual
      * @global \moodle_database $DB
      * @param object $doc
      */
-    private static function remove_from_index($doc)
+    public static function remove_from_index($doc)
     {
         global $DB;
 
@@ -876,8 +876,12 @@ class upload_start_check_manual
             }
             if ($originality >= $this->plugin_cfg->originality_limit) {
                 $this->result->class = "advacheck-green";
+                $this->result->iconclass = "advacheck-green_icon";
+                $this->result->icontype = "fa-circle-check";
             } else {
                 $this->result->class = "advacheck-red";
+                $this->result->iconclass = "advacheck-red_icon";
+                $this->result->icontype = "fa-circle-exclamation";
             }
         }
         $this->result->status = $DB->get_field('plagiarism_advacheck_docs', 'status', ['id' => $this->docrecord->id]);
@@ -1167,6 +1171,9 @@ class upload_start_check_manual
         } else {
             $api_data = $api->get_current_check_status($docid);
         }
+        if (!empty($docrecord->error)) {
+            $result->error = $docrecord->error;
+        }
 
         $originality = 0;
         if (!isset($api_data->error) && $api_data->status === "Ready") {
@@ -1234,8 +1241,12 @@ class upload_start_check_manual
 
             if ($docrecord->originality >= $plugin_cfg->originality_limit) {
                 $result->class = "advacheck-green";
+                $result->iconclass = "advacheck-green_icon";
+                $result->icontype = "fa-circle-check";
             } else {
                 $result->class = "advacheck-red";
+                $result->iconclass = "advacheck-red_icon";
+                $result->icontype = "fa-circle-exclamation";
             }
         } else if (!$docrecord) {
             $result->error = get_string('docnotchecked', 'plagiarism_advacheck');

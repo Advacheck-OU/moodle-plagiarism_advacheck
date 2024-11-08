@@ -71,9 +71,8 @@ define(['jquery', 'core/tree'], function ($) {
                 // Hide the button
                 $(".advacheck-checkbtn." + typeid).hide();
                 // Show the loader img
+                $(".advacheck-gray.checking." + typeid).removeClass("advacheck-hidden");
                 $(".advacheck-loader." + typeid).removeClass("advacheck-hidden");
-                $(".advacheck-data.advacheck-gray.checking." + typeid).css("display", "inline-grid");
-                $(".advacheck-data.advacheck-gray.checking." + typeid).show();
 
                 $.ajax({
                     url: M.cfg.wwwroot + "/plagiarism/advacheck/ajax.php",
@@ -136,9 +135,9 @@ define(['jquery', 'core/tree'], function ($) {
                 if (data.status == 4 || data.status == 5) {
                     // Hide progress circle
                     $(".advacheck-loader." + typeid).addClass("advacheck-hidden");
-                    $(".advacheck-data.advacheck-gray.checking." + typeid).hide();
+                    $(".advacheck-gray.checking." + typeid).addClass("advacheck-hidden");
                     // Hide info block
-                    $("check_notice." + typeid).hide();
+                    $(".check_notice." + typeid).addClass("advacheck-hidden");
 
                     if (data.docid) {
                         $(".advacheck-data." + typeid + " .docid").html(data.docid);
@@ -161,9 +160,8 @@ define(['jquery', 'core/tree'], function ($) {
                     }
                     // Suspicious doc icon
                     if (data.issuspicious && data.report) {
-                        $("span.advacheck-suspicious." + typeid).attr("class", "span.advacheck-suspicious." + typeid + " advacheck-suspiciouson");
-                        $("span.advacheck-suspicious_lnk." + typeid).attr('href', data.report);
-                        $("span.advacheck-suspicious_lnk." + typeid).attr("class", "span.advacheck-suspicious_lnk." + typeid + " advacheck-suspiciouson");
+                        $("span.advacheck-suspicious." + typeid).attr("class", "advacheck-suspicious " + typeid + " advacheck-suspiciouson");
+                        $("a.advacheck-suspicious_lnk." + typeid).attr('href', data.report);
                     }
                     // Link to report
                     if (data.report) {
@@ -175,11 +173,16 @@ define(['jquery', 'core/tree'], function ($) {
                         var title = $(".advacheck-plagiarismresult." + typeid).attr('title', title);
                         $(".advacheck-report-" + typeid).attr('href', data.report).show();
                     }
-                    // Help icon
-                    $(".advacheck_help." + typeid).show();
+                    // Help icon, update button and suspicious icon
+                    $(".advacheck-clear." + typeid).removeClass("advacheck-hidden")
+
+                    // Change background color 
                     if (data.class) {
-                        // Change background color 
-                        $(".advacheck-plagiarismresult." + typeid).attr("class", "advacheck-plagiarismresult " + typeid + " " + data.class);
+                        $(".advacheck-plagiarismresult." + typeid).attr("class", "badge badge-pill advacheck-plagiarismresult " + typeid + " " + data.class);
+                        $(".fa-solid.fa-arrow-right." + typeid).attr("class", "fa-solid fa-arrow-right " + typeid + " " + data.iconclass);
+                        $(".invisibleicon." + typeid).attr("class", "fa-solid " + " " + data.icontype + " " + typeid + " " + data.iconclass);
+                        $(".fa-solid.fa-circle-check." + typeid).attr("class", "fa-solid fa-circle-check " + typeid + " " + data.iconclass);
+                        $(".fa-solid.fa-circle-exclamation." + typeid).attr("class", "fa-solid fa-circle-exclamation " + typeid + " " + data.iconclass);
                     }
                     // If started a cycle of waiting for results on this document. Stop cycle.
                     if (this.verifyStatus[typeid]) {
@@ -192,11 +195,11 @@ define(['jquery', 'core/tree'], function ($) {
                 } else if (data.error) {
                     // Hide progress circle
                     $(".advacheck-loader." + typeid).addClass("advacheck-hidden");
-                    $(".advacheck-data.advacheck-gray.checking." + typeid).hide();
+                    $(".advacheck-data.badge.badge-pill.advacheck-gray.checking." + typeid).hide();
                     // Hide check button
                     $(".advacheck." + typeid).addClass("advacheck-hidden");
                     // Show info about error
-                    $(".advacheck-plagiarismresult." + typeid).attr("class", "advacheck-plagiarismresult " + typeid + " advacheck-red");
+                    $(".advacheck-plagiarismresult." + typeid).attr("class", "badge badge-pill advacheck-plagiarismresult " + typeid + " advacheck-clear");
                     $(".advacheck-plagiarismresult." + typeid).html(data.error);
                     // If started a cycle of waiting for results on this document. Stop cycle.
                     if (this.verifyStatus[typeid]) {
@@ -215,11 +218,11 @@ define(['jquery', 'core/tree'], function ($) {
             } catch (e) {
                 // Hide progress circle
                 $(".advacheck-loader." + typeid).addClass("advacheck-hidden");
-                $(".advacheck-data.advacheck-gray.checking." + typeid).hide();
+                $(".advacheck-data.badge.badge-pill.advacheck-gray.checking." + typeid).hide();
                 // Hide check button
                 $(".advacheck." + typeid).addClass("advacheck-hidden");
                 // Show info about error
-                $(".advacheck-plagiarismresult." + typeid).addClass("class", "advacheck-plagiarismresult " + typeid + " " + data.class);
+                $(".advacheck-plagiarismresult." + typeid).addClass("class", "badge badge-pill advacheck-plagiarismresult " + typeid + " " + data.class);
                 $(".advacheck-plagiarismresult." + typeid).html(data.error);
                 console.log(e.message);
                 console.log(data);

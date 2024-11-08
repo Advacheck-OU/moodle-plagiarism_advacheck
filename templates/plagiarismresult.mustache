@@ -33,46 +33,47 @@
     {
     }
 }}
-<div class="advacheck-plagiarismresult {{typeid}} {{class}}" 
+<div class="badge badge-pill advacheck-plagiarismresult {{typeid}} {{class}}" 
      style="align-content: center;" 
      title="{{#str}}resultdetails, plagiarism_advacheck, { "plagiarism": {{plagiarism}}, "selfcite": {{selfcite}}, "legal": {{legal}} , "originality": {{originality}}}{{/str}}" >
-    <span class="advacheck-value-plag" style="font-size: 110%; vertical-align: middle;">{{#str}}plagiarism, plagiarism_advacheck{{/str}}</span>
-    <span class="plagiarism-{{typeid}}" style="font-size: 110%; vertical-align: middle;">{{plagiarism}}% </span> 
+     <i class="{{icontype}} {{typeid}} {{coloricon}}"></i>
+    <span class="advacheck-value-plag" style="font-size: 110%;">{{#str}}plagiarism, plagiarism_advacheck{{/str}}</span>
+    <span class="plagiarism-{{typeid}}" style="font-size: 110%; ">{{plagiarism}}% </span> 
 
     <a class="advacheck-report-{{typeid}}" target="_blank" 
         title="{{#str}}report, plagiarism_advacheck{{/str}}" 
         href="{{reportlinkhref}}"        
-        style="padding: 0.1rem 0.25rem; font-size: 100%;">
-         <i class="fa-regular fa-rectangle-list fa-lg btn btn-secondary " 
-         style="padding: 0.1rem 0.25rem; font-size: 100%;"></i>
+        style="font-size: 100%;">
+         <i class="fa-solid fa-arrow-right {{typeid}} {{coloricon}}" ></i>
     </a> 
-
+</div>
+<span class="advacheck-clear {{typeid}} {{hidden}}">
     <span class="advacheck-data {{typeid}}">
         <span class="typeid">{{typeid}}</span>
     </span>
 
-    <a class="btn btn-secondary update_report" 
-       title="{{#str}}updatereport, plagiarism_advacheck{{/str}}" 
-       href="{{updatereporthref}}"
-       style="padding: 0.1rem 0.25rem; font-size: 100%;">
-        <i class="fa-solid fa-retweet fa-lg " 
-       style="padding: 0px; font-size: 100%;"></i>
+    <a class="update_report" 
+        title="{{#str}}updatereport, plagiarism_advacheck{{/str}}" 
+        href="{{updatereporthref}}"
+        style="font-size: 100%;">
+        <i class="fa-solid fa-arrows-rotate" 
+        style="font-size: 100%;"></i>
     </a> 
 
     {{{downloadcertificate}}} 
-    
+
     <span class="advacheck-suspicious {{typeid}} {{suspicioustoggleclass}}" >
         <a title="{{#str}}suspicious, plagiarism_advacheck{{/str}}" 
-           class="advacheck-suspicious_lnk {{typeid}} {{suspicioustoggleclass}}" 
-           style="padding: 0.1rem 0.25rem; font-size: 100%;"
-           href="{{suspiciouslnkhref}}"
-           target="_blank">
+            class="advacheck-suspicious_lnk {{typeid}}" 
+            style="font-size: 100%;"
+            target="_blank"
+            href="{{suspiciouslnkhref}}">
             <i class="fa-solid fa-triangle-exclamation fa-lg" 
-           style="padding: 0.1rem 0.25rem; font-size: 100%;"> </i>
+            style=" font-size: 100%;"> </i>
         </a>
     </span>
 
     <span style="font-size: 80%; vertical-align: middle;">
         {{{plagiarismresulthelp}}}
     </span>
-</div>
+</span>

@@ -15,7 +15,7 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template plagiarism_advacheck/loaderimg
+    @template plagiarism_advacheck/blockinfoclear
 
     Template purpose and description.
 
@@ -32,10 +32,9 @@
     {
     }
 }}
-
-<span class="badge badge-pill advacheck-gray checking {{typeid}} {{hidden}}">
-    <span class="advacheck-loader {{typeid}} {{hidden}}">
-        <i class="fa-solid fa-spinner fa-spin-pulse"></i>
+<div class="advacheck advacheck-clear {{addclass}}">
+    <span>
+        <i class="fa-solid fa-circle-info" style="color: #405178;"></i>
+        {{infostring}}
     </span>
-    {{infostring}}
-</span>
+</div>
