@@ -26,4 +26,4 @@ $plugin->component = 'plagiarism_advacheck';
 $plugin->version = 2024110816;
 $plugin->requires = 2010042803;
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '3.2.4';
+$plugin->release = '3.2.5';
