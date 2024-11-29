@@ -34,16 +34,15 @@
     }
 }}
 <div class="badge badge-pill advacheck-plagiarismresult {{typeid}} {{class}}" 
-     style="align-content: center;" 
+     id="advacheckaligncenter" 
      title="{{#str}}resultdetails, plagiarism_advacheck, { "plagiarism": {{plagiarism}}, "selfcite": {{selfcite}}, "legal": {{legal}} , "originality": {{originality}}}{{/str}}" >
      <i class="{{icontype}} {{typeid}} {{coloricon}}"></i>
-    <span class="advacheck-value-plag" style="font-size: 110%;">{{#str}}plagiarism, plagiarism_advacheck{{/str}}</span>
-    <span class="plagiarism-{{typeid}}" style="font-size: 110%; ">{{plagiarism}}% </span> 
+    <span class="advacheck-value-plag" >{{#str}}plagiarism, plagiarism_advacheck{{/str}}</span>
+    <span class="plagiarism-{{typeid}}" >{{plagiarism}}% </span> 
 
     <a class="advacheck-report-{{typeid}}" target="_blank" 
         title="{{#str}}report, plagiarism_advacheck{{/str}}" 
-        href="{{reportlinkhref}}"        
-        style="font-size: 100%;">
+        href="{{reportlinkhref}}" >
          <i class="fa-solid fa-arrow-right {{typeid}} {{coloricon}}" ></i>
     </a> 
 </div>
@@ -54,26 +53,22 @@
 
     <a class="update_report" 
         title="{{#str}}updatereport, plagiarism_advacheck{{/str}}" 
-        href="{{updatereporthref}}"
-        style="font-size: 100%;">
-        <i class="fa-solid fa-arrows-rotate" 
-        style="font-size: 100%;"></i>
+        href="{{updatereporthref}}">
+        <i class="fa-solid fa-arrows-rotate"></i>
     </a> 
 
     {{{downloadcertificate}}} 
 
     <span class="advacheck-suspicious {{typeid}} {{suspicioustoggleclass}}" >
         <a title="{{#str}}suspicious, plagiarism_advacheck{{/str}}" 
-            class="advacheck-suspicious_lnk {{typeid}}" 
-            style="font-size: 100%;"
+            class="advacheck-suspicious_lnk {{typeid}}"
             target="_blank"
             href="{{suspiciouslnkhref}}">
-            <i class="fa-solid fa-triangle-exclamation fa-lg" 
-            style=" font-size: 100%;"> </i>
+            <i class="fa-solid fa-triangle-exclamation fa-lg"> </i>
         </a>
     </span>
 
-    <span style="font-size: 80%; vertical-align: middle;">
+    <span vertical-align: middle;">
         {{{plagiarismresulthelp}}}
     </span>
 </span>

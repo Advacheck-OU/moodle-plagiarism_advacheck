@@ -789,6 +789,8 @@ function plagiarism_advacheck_coursemodule_standard_elements($formwrapper, $mfor
             $mform->setDefault('works_types', $mod_settings->works_types);
         }
 
+
+
         if ($mod_settings) {
             $mform->setDefault('advacheck_mode', $mod_settings->mode);
             if ($mod_settings->mode > 0) {
