@@ -69,6 +69,13 @@
                 <FIELD NAME="add_to_index" TYPE="int" LENGTH="1" NOTNULL="false" DEFAULT="1" SEQUENCE="false" COMMENT=""/>
                 <FIELD NAME="disp_notices" TYPE="int" LENGTH="2" NOTNULL="false" DEFAULT="1" SEQUENCE="false" COMMENT=""/>
                 <FIELD NAME="works_types" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
+                <FIELD NAME="docsecttitle" TYPE="binary" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
+                <FIELD NAME="docsectcontent" TYPE="binary" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
+                <FIELD NAME="docsectbibliography" TYPE="binary" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
+                <FIELD NAME="docsectappendix" TYPE="binary" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
+                <FIELD NAME="docsectintroduction" TYPE="binary" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
+                <FIELD NAME="docsectmethod" TYPE="binary" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
+                <FIELD NAME="docsectconclusion" TYPE="binary" NOTNULL="false" SEQUENCE="false" COMMENT=""/>
             </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>

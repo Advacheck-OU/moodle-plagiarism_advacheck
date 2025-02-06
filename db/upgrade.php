@@ -112,5 +112,70 @@ function xmldb_plagiarism_advacheck_upgrade($oldversion)
         // Apgtru savepoint reached.
         upgrade_plugin_savepoint(true, 2024040904, 'plagiarism', 'advacheck');
     }
+
+    if ($oldversion < 2024121016) {
+
+        // Define field docsecttitle to be added to plagiarism_advacheck_course.
+        $table = new xmldb_table('plagiarism_advacheck_course');
+        $field = new xmldb_field('docsecttitle', XMLDB_TYPE_BINARY, null, null, null, null, null, 'works_types');
+
+        // Conditionally launch add field docsecttitle.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('docsectcontent', XMLDB_TYPE_BINARY, null, null, null, null, null, 'docsecttitle');
+
+        // Conditionally launch add field docsectcontent.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('docsectbibliography', XMLDB_TYPE_BINARY, null, null, null, null, null, 'docsectcontent');
+
+        // Conditionally launch add field docsectbibliography.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('docsectappendix', XMLDB_TYPE_BINARY, null, null, null, null, null, 'docsectbibliography');
+
+        // Conditionally launch add field docsectappendix.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('docsectintroduction', XMLDB_TYPE_BINARY, null, null, null, null, null, 'docsectappendix');
+
+        // Conditionally launch add field docsectappendix.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('docsectmethod', XMLDB_TYPE_BINARY, null, null, null, null, null, 'docsectintroduction');
+
+        // Conditionally launch add field docsectappendix.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('docsectconclusion', XMLDB_TYPE_BINARY, null, null, null, null, null, 'docsectmethod');
+
+        // Conditionally launch add field docsectappendix.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        set_config('docsecttitledefault', 1, 'plagiarism_advacheck');
+        set_config('docsectcontentdefault', 1, 'plagiarism_advacheck');
+        set_config('docsectbibliographydefault', 1, 'plagiarism_advacheck');
+        set_config('docsectappendixdefault', 1, 'plagiarism_advacheck');
+        set_config('docsectintroductiondefault', 1, 'plagiarism_advacheck');
+        set_config('docsectmethoddefault', 1, 'plagiarism_advacheck');
+        set_config('docsectconclusiondefault', 1, 'plagiarism_advacheck');
+
+        // Apgtru savepoint reached.
+        upgrade_plugin_savepoint(true, 2024121016, 'plagiarism', 'advacheck');
+    }
     return true;
 }

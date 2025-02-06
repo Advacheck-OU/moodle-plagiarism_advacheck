@@ -198,16 +198,23 @@ class advacheck_api
      * Starts document verification.
      *
      * @param int $ap_docid ID of the document in the AP.
+     * @param array $ignoresections An array of document sections to exclude from verification.
      * @return mixed boolean | error message
      */
-    public function start_check($ap_docid)
+    public function start_check($ap_docid, $ignoresections)
     {
         $externalid = new \stdClass();
         $externalid->Id = $ap_docid;
         $externalid->External = null;
+
+        $checkdocparameters = [
+            "DisableFuzzySearch" => false,
+            "IgnoreSections" => $ignoresections
+        ];
+
         // Initiate verification.
         try {
-            $this->client->CheckDocument(["docId" => $externalid, "checkServicesList" => []]);
+            $this->client->CheckDocument(["docId" => $externalid, "checkServicesList" => [], "checkDocParameters" => $checkdocparameters]);
             return true;
         } catch (\SoapFault $e) {
             return $e->getMessage();

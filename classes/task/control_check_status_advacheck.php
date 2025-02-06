@@ -64,8 +64,8 @@ class control_check_status_advacheck extends \core\task\scheduled_task
         $this->logobject = new queue_log_manager();
 
         mtrace(get_string('control_check_status_enter', 'plagiarism_advacheck'));
-        require_once ($CFG->libdir . '/filelib.php');
-        require_once ($CFG->dirroot . '/mod/assign/locallib.php');
+        require_once($CFG->libdir . '/filelib.php');
+        require_once($CFG->dirroot . '/mod/assign/locallib.php');
 
         if (empty($this->config->uri) || empty($this->config->login) || empty($this->config->password)) {
             mtrace(get_string('control_check_status_nologindata', 'plagiarism_advacheck'));
@@ -246,7 +246,17 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $a->id = $item->id;
                 $a->time = date('d:m:Y H:i:s');
                 mtrace("        " . get_string('control_check_status_nostartcheck', 'plagiarism_advacheck'));
-                $m = $this->api->start_check($docid);
+                $cm_sett = $DB->get_record('plagiarism_advacheck_course', ['cmid' => $item->cmid, 'courseid' => $item->courseid]);
+                $ignoresections = [
+                    "Title" => !$cm_sett->docsecttitle,
+                    "Content" => !$cm_sett->docsectcontent,
+                    "Bibliography" => !$cm_sett->docsectbibliography,
+                    "Appendix" => !$cm_sett->docsectappendix,
+                    "Introduction" => !$cm_sett->docsectintroduction,
+                    "Method" => !$cm_sett->docsectmethod,
+                    "Conclusion" => !$cm_sett->docsectconclusion,
+                ];
+                $m = $this->api->start_check($docid, $ignoresections);
                 $status = advacheck_constants::PLAGIARISM_ADVACHECK_CHECKING;
                 $DB->set_field('plagiarism_advacheck_docs', 'timecheck_start', time(), ['id' => $item->id]);
                 $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $item->id]);

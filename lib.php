@@ -789,7 +789,50 @@ function plagiarism_advacheck_coursemodule_standard_elements($formwrapper, $mfor
             $mform->setDefault('works_types', $mod_settings->works_types);
         }
 
+        $header1 = html_writer::tag('h3', get_string('structuresectionsheadermod', 'plagiarism_advacheck'), ['class' => 'main']);
+        $mform->addElement('html', $header1);
 
+        $mform->addElement('advcheckbox', 'advacheck_docsecttitle', get_string('docsecttitle', 'plagiarism_advacheck'), '', [], [0, 1]);
+        $mform->disabledIf('advacheck_docsecttitle', 'advacheck_mode', 'eq', 0);
+        $docsecttitledefaultglobal = isset($plugin_cfg->docsecttitledefault) ? $plugin_cfg->docsecttitledefault : 1;
+        $docsecttitledefault = isset($mod_settings->docsecttitle) ? $mod_settings->docsecttitle : $docsecttitledefaultglobal;
+        $mform->setDefault('advacheck_docsecttitle', $docsecttitledefault);
+
+        $mform->addElement('advcheckbox', 'advacheck_docsectcontent', get_string('docsectcontent', 'plagiarism_advacheck'), '', [], [0, 1]);
+        $mform->disabledIf('advacheck_docsectcontent', 'advacheck_mode', 'eq', 0);
+        $docsectcontentdefaultglobal = isset($plugin_cfg->docsectcontentdefault) ? $plugin_cfg->docsectcontentdefault : 1;
+        $docsectcontentdefault = isset($mod_settings->docsectcontent) ? $mod_settings->docsectcontent : $docsectcontentdefaultglobal;
+        $mform->setDefault('advacheck_docsectcontent', $docsectcontentdefault);
+
+        $mform->addElement('advcheckbox', 'advacheck_docsectbibliography', get_string('docsectbibliography', 'plagiarism_advacheck'), '', [], [0, 1]);
+        $mform->disabledIf('advacheck_docsectbibliography', 'advacheck_mode', 'eq', 0);
+        $docsectbibliographydefaultglobal = isset($plugin_cfg->docsectbibliographydefault) ? $plugin_cfg->docsectbibliographydefault : 1;
+        $docsectbibliographydefault = isset($mod_settings->docsectbibliography) ? $mod_settings->docsectbibliography : $docsectbibliographydefaultglobal;
+        $mform->setDefault('advacheck_docsectbibliography', $docsectbibliographydefault);
+
+        $mform->addElement('advcheckbox', 'advacheck_docsectappendix', get_string('docsectappendix', 'plagiarism_advacheck'), '', [], [0, 1]);
+        $mform->disabledIf('advacheck_docsectappendix', 'advacheck_mode', 'eq', 0);
+        $docsectappendixdefaultglobal = isset($plugin_cfg->docsectappendixdefault) ? $plugin_cfg->docsectappendixdefault : 1;
+        $docsectappendix = isset($mod_settings->docsectappendix) ? $mod_settings->docsectappendix : $docsectappendixdefaultglobal;
+        $mform->setDefault('advacheck_docsectappendix', $docsectappendix);
+
+        $mform->addElement('advcheckbox', 'advacheck_docsectintroduction', get_string('docsectintroduction', 'plagiarism_advacheck'), '', [], [0, 1]);
+        $mform->disabledIf('advacheck_docsectintroduction', 'advacheck_mode', 'eq', 0);
+        $docsectintroductiondefaultglobal = isset($plugin_cfg->docsectintroductiondefault) ? $plugin_cfg->docsectintroductiondefault : 1;
+        $docsectintroduction = isset($mod_settings->docsectintroduction) ? $mod_settings->docsectintroduction : $docsectintroductiondefaultglobal;
+        $mform->setDefault('advacheck_docsectintroduction', $docsectintroduction);
+
+        $mform->addElement('advcheckbox', 'advacheck_docsectmethod', get_string('docsectmethod', 'plagiarism_advacheck'), '', [], [0, 1]);
+        $mform->disabledIf('advacheck_docsectmethod', 'advacheck_mode', 'eq', 0);
+        $docsectmethoddefaultglobal = isset($plugin_cfg->docsectmethoddefault) ? $plugin_cfg->docsectmethoddefault : 1;
+        $docsectmethod = isset($mod_settings->docsectmethod) ? $mod_settings->docsectmethod : $docsectmethoddefaultglobal;
+        $mform->setDefault('advacheck_docsectmethod', $docsectmethod);
+
+        $mform->addElement('advcheckbox', 'advacheck_docsectconclusion', get_string('docsectconclusion', 'plagiarism_advacheck'), '', [], [0, 1]);
+        $mform->disabledIf('advacheck_docsectconclusion', 'advacheck_mode', 'eq', 0);
+        $docsectconclusiondefaultglobal = isset($plugin_cfg->docsectconclusiondefault) ? $plugin_cfg->docsectconclusiondefault : 1;
+        $docsectconclusion = isset($mod_settings->docsectconclusion) ? $mod_settings->docsectconclusion : $docsectconclusiondefaultglobal;
+        $mform->setDefault('advacheck_docsectconclusion', $docsectconclusion);
 
         if ($mod_settings) {
             $mform->setDefault('advacheck_mode', $mod_settings->mode);
@@ -868,8 +911,32 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
             $row->disp_notices = $data->disp_notices;
         }
 
-        if (isset($data->works_types)) {
-            $row->works_types = $data->works_types;
+        if (isset($data->advacheck_docsecttitle)) {
+            $row->docsecttitle = $data->advacheck_docsecttitle;
+        }
+
+        if (isset($data->advacheck_docsectcontent)) {
+            $row->docsectcontent = $data->advacheck_docsectcontent;
+        }
+
+        if (isset($data->advacheck_docsectbibliography)) {
+            $row->docsectbibliography = $data->advacheck_docsectbibliography;
+        }
+
+        if (isset($data->advacheck_docsectappendix)) {
+            $row->docsectappendix = $data->advacheck_docsectappendix;
+        }
+
+        if (isset($data->advacheck_docsectintroduction)) {
+            $row->docsectintroduction = $data->advacheck_docsectintroduction;
+        }
+
+        if (isset($data->advacheck_docsectmethod)) {
+            $row->docsectmethod = $data->advacheck_docsectmethod;
+        }
+
+        if (isset($data->advacheck_docsectconclusion)) {
+            $row->docsectconclusion = $data->advacheck_docsectconclusion;
         }
 
         if ($r = $DB->get_record('plagiarism_advacheck_course', ['courseid' => $row->courseid, 'cmid' => $row->cmid])) {

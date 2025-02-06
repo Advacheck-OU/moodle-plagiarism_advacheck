@@ -223,15 +223,34 @@ class plagiarism_advacheck_settings_form extends moodleform
                 $mform->setDefault('add_attr_course', 1);
                 $mform->addElement('advcheckbox', 'add_attr_item', get_string('add_attr_item', 'plagiarism_advacheck'), '', [], [0, 1]);
                 $mform->setDefault('add_attr_item', 1);
-                $mform->addElement(
-                    'advcheckbox',
-                    'add_attr_discusname',
-                    get_string('add_attr_discusname', 'plagiarism_advacheck'),
-                    '',
-                    [],
-                    [0, 1]
-                );
+                $mform->addElement('advcheckbox', 'add_attr_discusname', get_string('add_attr_discusname', 'plagiarism_advacheck'), '', [0, 1]);
                 $mform->setDefault('add_attr_discusname', 1);
+
+                $header4 = html_writer::tag('h3', get_string('structuresectionsheader', 'plagiarism_advacheck'), ['class' => 'main']);
+                $mform->addElement('html', $header4);
+                $header5 = html_writer::tag('p', get_string('structuresectionsheader2', 'plagiarism_advacheck'), ['class' => 'main']);
+                $mform->addElement('html', $header5);
+                $mform->addElement('advcheckbox', 'docsecttitledefault', get_string('docsecttitle', 'plagiarism_advacheck'), '', [], [0, 1]);
+                $mform->setDefault('docsecttitledefault', 1);
+
+                $mform->addElement('advcheckbox', 'docsectcontentdefault', get_string('docsectcontent', 'plagiarism_advacheck'), '', [], [0, 1]);
+                $mform->setDefault('docsectcontentdefault', 1);
+
+                $mform->addElement('advcheckbox', 'docsectbibliographydefault', get_string('docsectbibliography', 'plagiarism_advacheck'), '', [], [0, 1]);
+                $mform->setDefault('docsectbibliographydefault', 1);
+
+                $mform->addElement('advcheckbox', 'docsectappendixdefault', get_string('docsectappendix', 'plagiarism_advacheck'), '', [], [0, 1]);
+                $mform->setDefault('docsectappendixdefault', 1);
+
+                $mform->addElement('advcheckbox', 'docsectintroductiondefault', get_string('docsectintroduction', 'plagiarism_advacheck'), '', [], [0, 1]);
+                $mform->setDefault('docsectintroductiondefault', 1);
+
+                $mform->addElement('advcheckbox', 'docsectmethoddefault', get_string('docsectmethod', 'plagiarism_advacheck'), '', [], [0, 1]);
+                $mform->setDefault('docsectmethoddefault', 1);
+
+                $mform->addElement('advcheckbox', 'docsectconclusiondefault', get_string('docsectconclusion', 'plagiarism_advacheck'), '', [], [0, 1]);
+                $mform->setDefault('docsectconclusiondefault', 1);
+
                 $buttonarray = array();
                 $buttonarray[] = &$mform->createElement('html', html_writer::tag('button', get_string('save'), ['class' => 'btn btn-primary', 'type' => 'submit', 'name' => 'submitbutton']));
                 $buttonarray[] = &$mform->createElement('cancel');

@@ -23,7 +23,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'plagiarism_advacheck';
-$plugin->version = 2024120400;
+$plugin->version = 2024121016;
 $plugin->requires = 2010042803;
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '3.2.7';
+$plugin->release = '3.3.0';

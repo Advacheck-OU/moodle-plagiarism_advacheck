@@ -1102,7 +1102,18 @@ class upload_start_check_manual
     function start_check_manual()
     {
         global $DB;
-        $m = $this->api->start_check($this->ap_docid);
+        $cm_sett = $DB->get_record('plagiarism_advacheck_course', ['cmid' => $this->docrecord->cmid, 'courseid' => $this->docrecord->courseid]);
+        $ignoresections = [
+            "Title" => !$cm_sett->docsecttitle,
+            "Content" => !$cm_sett->docsectcontent,
+            "Bibliography" => !$cm_sett->docsectbibliography,
+            "Appendix" => !$cm_sett->docsectappendix,
+            "Introduction" => !$cm_sett->docsectintroduction,
+            "Method" => !$cm_sett->docsectmethod,
+            "Conclusion" => !$cm_sett->docsectconclusion,
+        ];
+
+        $m = $this->api->start_check($this->ap_docid, $ignoresections);
 
         // The status is “PLAGIARISM_ADVACHECK_CHECKING”, because checks can take a long time.
         $status = advacheck_constants::PLAGIARISM_ADVACHECK_CHECKING;

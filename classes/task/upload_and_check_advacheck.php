@@ -74,8 +74,8 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
 
         // We went to the task of downloading and sending documents for verification.
         mtrace(PHP_EOL . get_string('upload_and_check_enter', 'plagiarism_advacheck', null));
-        require_once ($CFG->libdir . '/filelib.php');
-        require_once ($CFG->dirroot . '/mod/assign/locallib.php');
+        require_once($CFG->libdir . '/filelib.php');
+        require_once($CFG->dirroot . '/mod/assign/locallib.php');
 
         if (empty($this->config->uri) || empty($this->config->login) || empty($this->config->password)) {
             // Connection details have not been entered! I'm leaving the task.
@@ -635,7 +635,17 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
                     $a->time = date('d:m:Y H:i:s');
                     mtrace("        " . get_string('upload_and_check_startingdoccheck', 'plagiarism_advacheck', $a));
                     mtrace(PHP_EOL);
-                    $m = $this->api->start_check($externalid);
+                    $cm_sett = $DB->get_record('plagiarism_advacheck_course', ['cmid' => $item->cmid, 'courseid' => $item->courseid]);
+                    $ignoresections = [
+                        "Title" => !$cm_sett->docsecttitle,
+                        "Content" => !$cm_sett->docsectcontent,
+                        "Bibliography" => !$cm_sett->docsectbibliography,
+                        "Appendix" => !$cm_sett->docsectappendix,
+                        "Introduction" => !$cm_sett->docsectintroduction,
+                        "Method" => !$cm_sett->docsectmethod,
+                        "Conclusion" => !$cm_sett->docsectconclusion,
+                    ];
+                    $m = $this->api->start_check($externalid, $ignoresections);
                     // The status is "in checking", because checks can take a long time.
                     $status = advacheck_constants::PLAGIARISM_ADVACHECK_CHECKING;
                     $DB->set_field('plagiarism_advacheck_docs', 'timecheck_start', time(), ['id' => $item->id]);
