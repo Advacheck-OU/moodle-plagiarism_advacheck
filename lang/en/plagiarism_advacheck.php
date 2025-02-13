@@ -345,3 +345,4 @@ $string['docsectappendix'] = 'Appendix';
 $string['docsectconclusion'] = 'Conclusions';
 $string['docsectmethod'] = 'Methods';
 $string['docsectintroduction'] = 'Introduction';
+$string['invalidfiletypeinfo'] = 'This file type is not supported for verification.';
