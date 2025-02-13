@@ -313,7 +313,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                     $output = '';
                     break;
                 case advacheck_constants::PLAGIARISM_ADVACHECK_INVALIDFILETYPE:
-                    $infostring = get_string('uploaded', 'plagiarism_advacheck');
+                    $infostring = get_string('invalidfiletypeinfo', 'plagiarism_advacheck');
                     $output = $OUTPUT->render_from_template('plagiarism_advacheck/blockinfoclear', ['infostring' => $infostring]);
                     break;
                 // Error when trying to upload.
