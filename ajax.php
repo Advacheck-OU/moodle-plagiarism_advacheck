@@ -24,7 +24,7 @@ defined('AJAX_SCRIPT');
 use \plagiarism_advacheck\local\upload_start_check_manual;
 use \plagiarism_advacheck\local\advacheck_constants;
 
-require_once ('../../config.php');
+require_once('../../config.php');
 require_once 'classes/local/constants.php';
 // Setting the internal encoding to which the HTTP request input data will be converted.
 mb_internal_encoding("UTF-8");
@@ -51,34 +51,41 @@ if (!confirm_sesskey()) {
 }
 
 // Checking the files.
-if (($action == "checkfile") && !empty($typeid) && (has_capability('plagiarism/advacheck:checkedby', $coursecontext) || has_capability('plagiarism/advacheck:checkadvacheck', $coursecontext))) {
-    $docverfyobj = new upload_start_check_manual(
-        $typeid,
-        $courseid,
-        $doctype,
-        $content,
-        $userid,
-        $assignment,
-        $discussion
-    );
-    $result = $docverfyobj->start_file_verify();
-    echo json_encode($result);
+if (($action == "checkfile") && !empty($typeid)) {
+    $cmid = $DB->get_field('plagiarism_advacheck_docs', 'cmid', ['typeid' => $typeid]);
+    $modulecontext = context_module::instance($cmid, MUST_EXIST);
+    if (has_capability('plagiarism/advacheck:checkedby', $modulecontext) || has_capability('plagiarism/advacheck:updatereport', $modulecontext)) {
+        $docverfyobj = new upload_start_check_manual(
+            $typeid,
+            $courseid,
+            $doctype,
+            $content,
+            $userid,
+            $assignment,
+            $discussion
+        );
+        $result = $docverfyobj->start_file_verify();
+        echo json_encode($result);
+    }
     exit;
 }
 // Checking the text.
 if (($action == "checktext") && !empty($typeid) && !empty($content) && !empty($typeid) && (has_capability('plagiarism/advacheck:checkedby', $coursecontext) || has_capability('plagiarism/advacheck:checkadvacheck', $coursecontext))) {
-
-    $docverfyobj = new upload_start_check_manual(
-        $typeid,
-        $courseid,
-        $doctype,
-        $content,
-        $userid,
-        $assignment,
-        $discussion
-    );
-    $result = $docverfyobj->start_text_verify();
-    echo json_encode($result);
+    $cmid = $DB->get_field('plagiarism_advacheck_docs', 'cmid', ['typeid' => $typeid]);
+    $modulecontext = context_module::instance($cmid, MUST_EXIST);
+    if (has_capability('plagiarism/advacheck:checkedby', $modulecontext) || has_capability('plagiarism/advacheck:updatereport', $modulecontext)) {
+        $docverfyobj = new upload_start_check_manual(
+            $typeid,
+            $courseid,
+            $doctype,
+            $content,
+            $userid,
+            $assignment,
+            $discussion
+        );
+        $result = $docverfyobj->start_text_verify();
+        echo json_encode($result);
+    }
     exit;
 }
 
@@ -169,10 +176,14 @@ if ($action == 'checktarif' && has_capability('plagiarism/advacheck:manage', $co
     exit;
 }
 // Updated the link to the report.
-if ($action == 'update_report' && has_capability('plagiarism/advacheck:updatereport', $coursecontext)) {
+if ($action == 'update_report') {
     $typeid = optional_param('typeid', '', PARAM_TEXT);
-    $link = upload_start_check_manual::update_advacheck_report($typeid);
-    echo json_encode($link);
+    $params;
+    $cmid = $DB->get_field('plagiarism_advacheck_docs', 'cmid', ['typeid' => $typeid]);
+    $modulecontext = context_module::instance($cmid, MUST_EXIST);
+    if (has_capability('plagiarism/advacheck:checkedby', $modulecontext) || has_capability('plagiarism/advacheck:updatereport', $modulecontext)) {
+        $link = upload_start_check_manual::update_advacheck_report($typeid);
+        echo json_encode($link);
+    }
     exit;
 }
-

@@ -361,7 +361,7 @@ class document_queue_manager
         // Checking if there is a record with hash of old algorithm.
         // If Moodle 3.3.3 and below.
         if ($CFG->version < 2017051504) {
-            require_once ($CFG->dirroot . '/mod/assign/locallib.php');
+            require_once($CFG->dirroot . '/mod/assign/locallib.php');
             list($course, $cm) = get_course_and_cm_from_cmid($this->cmid, 'assign');
             $assign = new \assign($this->mod_ctxt, $cm, $course);
             $content = $assign->render_editor_content(
@@ -496,7 +496,6 @@ class document_queue_manager
             if ($rec) {
                 continue;
             }
-            file_put_contents(__DIR__ . '/debug.log', 'kot15' . PHP_EOL, FILE_APPEND);
             $filetype = substr(strrchr($f->get_filename(), "."), 1) . ',';
             // Check the file extension for valid file types to scan.
             if (eventobservers::is_allow_file_type($filetype) === false) {
@@ -513,7 +512,6 @@ class document_queue_manager
                     $this->courseid,
                     $this->cmid
                 );
-                file_put_contents(__DIR__ . '/debug.log', 'kot2' . PHP_EOL, FILE_APPEND);
                 continue;
             }
             if (eventobservers::can_not_checked_by($this->crs_ctxt, $f->get_userid())) {
