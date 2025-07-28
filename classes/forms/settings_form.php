@@ -68,7 +68,7 @@ class plagiarism_advacheck_settings_form extends moodleform
                 $mform->setType('uri', PARAM_TEXT);
 
                 $default_url = get_string('default_uri', 'plagiarism_advacheck');
-                $default_url_val = 'https://testapi.advacheck.ru';
+                $default_url_val = 'https://testapi.advacheck.com';
                 $default_url = html_writer::div(
                     "$default_url: $default_url_val",
                     'form-shortname d-block small text-muted'
@@ -80,7 +80,7 @@ class plagiarism_advacheck_settings_form extends moodleform
                 $mform->setType('login', PARAM_TEXT);
 
                 $default_login = get_string('default_login', 'plagiarism_advacheck');
-                $default_login_val = 'testapi@advacheck.ru';
+                $default_login_val = 'testapi@advacheck.com';
                 $default_login = html_writer::div(
                     "$default_login: $default_login_val",
                     'form-shortname d-block small text-muted'
@@ -104,7 +104,7 @@ class plagiarism_advacheck_settings_form extends moodleform
                 $mform->setType('soap_wsdl', PARAM_TEXT);
 
                 $default_soap_wsdl = get_string('default_soap_wsdl', 'plagiarism_advacheck');
-                $default_soap_wsdl_val = 'https://api.advacheck.ru:4959/apiCorp/testapi?wsdl';
+                $default_soap_wsdl_val = 'https://api.advacheck.com:4959/apiCorp/testapi?wsdl';
                 $default_soap_wsdl = html_writer::div(
                     "$default_soap_wsdl: $default_soap_wsdl_val",
                     'form-shortname d-block small text-muted'
@@ -326,10 +326,10 @@ class plagiarism_advacheck_settings_form extends moodleform
     private function get_defaults_settings()
     {
         $plagiarismsettings = [];
-        $plagiarismsettings['uri'] = 'https://testapi.advacheck.ru';
-        $plagiarismsettings['login'] = 'testapi@advacheck.ru';
+        $plagiarismsettings['uri'] = 'https://testapi.advacheck.com';
+        $plagiarismsettings['login'] = 'testapi@advacheck.com';
         $plagiarismsettings['password'] = 'testapi';
-        $plagiarismsettings['soap_wsdl'] = 'https://api.advacheck.ru:4959/apiCorp/testapi?wsdl';
+        $plagiarismsettings['soap_wsdl'] = 'https://api.advacheck.com:4959/apiCorp/testapi?wsdl';
         return $plagiarismsettings;
     }
 
