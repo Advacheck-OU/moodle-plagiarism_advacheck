@@ -3,7 +3,7 @@ The Advacheck plugin for Moodle allows educators to seamlessly submit student re
 
 **IMPORTANT NOTICE**:
 To utilize the Advacheck plugin, you must have an active account on Advacheck.com which requires a commercial subscription. 
-Please [contact us](https://advacheck.ru/contacts/) to set up an account.
+Please [contact us](https://advacheck.com/contacts/) to set up an account.
 The default connection settings are configured for the demo version.
 
 ### INSTALLING
@@ -22,6 +22,6 @@ After installing the plugin, make sure that enableplagiarism parameter is enable
 
 Then go to Administration - Plugins - Plagiarism - Advacheck and enable our plugin (check Enable the Advacheck).
 
-After that you can configure the plugin according to the credentials obtained on [our site](https://advacheck.ru) or activate the test connection by setting the default settings.
-Detailed instructions for configuring the plugin are available on [our website](https://manual.advacheck.ru/main/docs/advacheck_plugin_documentation.pdf#%5B%7B%22num%22%3A32%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C33%2C805%2C0%5D).
+After that you can configure the plugin according to the credentials obtained on [our site](https://advacheck.com) or activate the test connection by setting the default settings.
+Detailed instructions for configuring the plugin are available on [our website](https://manual.advacheck.com/main/docs/advacheck_plugin_documentation.pdf#%5B%7B%22num%22%3A32%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C33%2C805%2C0%5D).
 
