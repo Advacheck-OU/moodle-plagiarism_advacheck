@@ -132,7 +132,7 @@ class plagiarism_advacheck_settings_form extends moodleform
 
                 $mform->addElement('text', 'cron_check_count', get_string('cron_check_count', 'plagiarism_advacheck'), array('size' => 3));
                 $mform->addRule('cron_check_count', null, 'required', null, 'client');
-                $mform->setType('cron_check_count', PARAM_TEXT);
+                $mform->setType('cron_check_count', PARAM_INT);
 
                 $mform->addElement(
                     'text',
@@ -141,12 +141,22 @@ class plagiarism_advacheck_settings_form extends moodleform
                     array('size' => 3)
                 );
                 $mform->addRule('originality_limit', null, 'required', null, 'client');
-                $mform->setType('originality_limit', PARAM_TEXT);
+                $mform->setType('originality_limit', PARAM_INT);
+
+                $mform->addElement(
+                    'text',
+                    'aiscore_limit',
+                    get_string('aiscore_limit', 'plagiarism_advacheck') . ", %",
+                    array('size' => 3)
+                );
+                $mform->addRule('aiscore_limit', null, 'required', null, 'client');
+                $mform->setDefault('aiscore_limit', '60');
+                $mform->setType('aiscore_limit', PARAM_INT);
 
                 $mform->addElement('text', 'min_len_str', get_string('min_len_str', 'plagiarism_advacheck'), array('size' => 3));
                 $mform->setDefault('min_len_str', '20');
                 $mform->addRule('min_len_str', null, 'required', null, 'client');
-                $mform->setType('min_len_str', PARAM_TEXT);
+                $mform->setType('min_len_str', PARAM_INT);
 
                 $mform->addElement('advcheckbox', 'check_assign', get_string('check_assign', 'plagiarism_advacheck'), '', [], [0, 1]);
                 $mform->addElement('advcheckbox', 'check_forum', get_string('check_forum', 'plagiarism_advacheck'), '', [], [0, 1]);

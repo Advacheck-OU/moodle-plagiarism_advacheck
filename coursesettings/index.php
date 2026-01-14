@@ -21,14 +21,18 @@
  * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once ('../../../config.php');
-require_once ($CFG->dirroot . '/plagiarism/advacheck/lib.php');
+require_once('../../../config.php');
+require_once($CFG->dirroot . '/plagiarism/advacheck/lib.php');
 
 use plagiarism_advacheck\local\advacheck_constants;
 
 $id = optional_param('courseid', 0, PARAM_INT);
 $course = $DB->get_record('course', ['id' => $id], '*', MUST_EXIST);
-$context = context_course::instance($course->id, MUST_EXIST);
+if ($course) {
+    $context = context_course::instance($course->id, MUST_EXIST);
+} else {
+    $context = context_system::instance();
+}
 
 require_login($course);
 

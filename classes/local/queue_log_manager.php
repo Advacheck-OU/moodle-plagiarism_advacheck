@@ -112,12 +112,14 @@ class queue_log_manager
         } else {
             $check_stud_lim = $sm->get_string('action_log_studcanotcheck', 'plagiarism_advacheck', null, $CFG->lang);
         }
-
-        $context = \context_course::instance($courseid, MUST_EXIST);
-        if (has_capability('plagiarism/advacheck:checkadvacheck', $context)) {
-            $checker = $sm->get_string('action_log_checkerteach', 'plagiarism_advacheck', null, $CFG->lang);
-        } else {
-            $checker = $sm->get_string('action_log_checkerstud', 'plagiarism_advacheck', null, $CFG->lang);
+        $checker = '-';
+        if ($DB->record_exists('course', ['id' => $courseid])) {
+            $context = \context_course::instance($courseid, MUST_EXIST);
+            if (has_capability('plagiarism/advacheck:checkadvacheck', $context)) {
+                $checker = $sm->get_string('action_log_checkerteach', 'plagiarism_advacheck', null, $CFG->lang);
+            } else {
+                $checker = $sm->get_string('action_log_checkerstud', 'plagiarism_advacheck', null, $CFG->lang);
+            }
         }
         // If there is a task, get the answer parameters, the number of checks available for students.
         // If forum, then get the forum type.

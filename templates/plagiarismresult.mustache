@@ -33,42 +33,49 @@
     {
     }
 }}
-<div class="badge badge-pill advacheck-plagiarismresult {{typeid}} {{class}}" 
-     id="advacheckaligncenter" 
-     title="{{#str}}resultdetails, plagiarism_advacheck, { "plagiarism": {{plagiarism}}, "selfcite": {{selfcite}}, "legal": {{legal}} , "originality": {{originality}}}{{/str}}" >
-     <i class="{{icontype}} {{typeid}} {{coloricon}}"></i>
-    <span class="advacheck-value-plag" >{{#str}}plagiarism, plagiarism_advacheck{{/str}}</span>
-    <span class="plagiarism-{{typeid}}" >{{plagiarism}}% </span> 
+<div id="advacheckaligncenter" >
+    <div class="badge badge-pill advacheck-plagiarismresult {{typeid}} {{class}}"         
+        title="{{#str}}resultdetails, plagiarism_advacheck, { "plagiarism": "{{plagiarism}}", "selfcite": "{{selfcite}}", "legal": "{{legal}}" , "originality": "{{originality}}", "scoreai": "{{scoreai}}"}{{/str}}" >
+        <div>
+            <i class="{{icontype}} {{typeid}} {{coloricon}}"></i>&nbsp;
+        </div>
+        <div> 
+            <span class="advacheck-value-plag" >{{#str}}plagiarism, plagiarism_advacheck{{/str}}</span>
+            <span class="plagiarism-{{typeid}}" >{{plagiarism}}%</span> 
+            {{{scoreaibar}}}
+        </div>
+        <div>
+            <a class="advacheck-report-{{typeid}}" target="_blank" 
+                title="{{#str}}report, plagiarism_advacheck{{/str}}" 
+                href="{{reportlinkhref}}" >
+                <i class="fa-solid fa-arrow-right {{typeid}} {{coloricon}}" ></i>
+            </a>        
+        </div>
+    </div>
+    <div class="advacheck-clear {{typeid}} {{hidden}}">
+        <span class="advacheck-data {{typeid}}">
+            <span class="typeid">{{typeid}}</span>
+        </span>
 
-    <a class="advacheck-report-{{typeid}}" target="_blank" 
-        title="{{#str}}report, plagiarism_advacheck{{/str}}" 
-        href="{{reportlinkhref}}" >
-         <i class="fa-solid fa-arrow-right {{typeid}} {{coloricon}}" ></i>
-    </a> 
+        <a class="update_report" 
+            title="{{#str}}updatereport, plagiarism_advacheck{{/str}}" 
+            href="{{updatereporthref}}">
+            <i class="fa-solid fa-arrows-rotate"></i>
+        </a> 
+
+        {{{downloadcertificate}}} 
+
+        <span class="advacheck-suspicious {{typeid}} {{suspicioustoggleclass}}" >
+            <a title="{{#str}}suspicious, plagiarism_advacheck{{/str}}" 
+                class="advacheck-suspicious_lnk {{typeid}}"
+                target="_blank"
+                href="{{suspiciouslnkhref}}">
+                <i class="fa-solid fa-triangle-exclamation fa-lg"> </i>
+            </a>
+        </span>
+
+        <span vertical-align: middle;">
+            {{{plagiarismresulthelp}}}
+        </span>
+    </div>
 </div>
-<span class="advacheck-clear {{typeid}} {{hidden}}">
-    <span class="advacheck-data {{typeid}}">
-        <span class="typeid">{{typeid}}</span>
-    </span>
-
-    <a class="update_report" 
-        title="{{#str}}updatereport, plagiarism_advacheck{{/str}}" 
-        href="{{updatereporthref}}">
-        <i class="fa-solid fa-arrows-rotate"></i>
-    </a> 
-
-    {{{downloadcertificate}}} 
-
-    <span class="advacheck-suspicious {{typeid}} {{suspicioustoggleclass}}" >
-        <a title="{{#str}}suspicious, plagiarism_advacheck{{/str}}" 
-            class="advacheck-suspicious_lnk {{typeid}}"
-            target="_blank"
-            href="{{suspiciouslnkhref}}">
-            <i class="fa-solid fa-triangle-exclamation fa-lg"> </i>
-        </a>
-    </span>
-
-    <span vertical-align: middle;">
-        {{{plagiarismresulthelp}}}
-    </span>
-</span>

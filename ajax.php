@@ -42,9 +42,13 @@ $discussion = optional_param("discussion", 0, PARAM_INT);
 $userid = optional_param("userid", 0, PARAM_INT);
 
 $course = $DB->get_record('course', ['id' => $courseid]);
-$coursecontext = context_course::instance($courseid, MUST_EXIST);
+if (!$course) {
+    $coursecontext = context_system::instance();
+} else {
+    $coursecontext = context_course::instance($courseid, MUST_EXIST);
+}
 
-require_login($course, false);
+require_login($courseid, false);
 
 if (!confirm_sesskey()) {
     throw new \moodle_exception('confirmsesskeybad');
@@ -178,7 +182,6 @@ if ($action == 'checktarif' && has_capability('plagiarism/advacheck:manage', $co
 // Updated the link to the report.
 if ($action == 'update_report') {
     $typeid = optional_param('typeid', '', PARAM_TEXT);
-    $params;
     $cmid = $DB->get_field('plagiarism_advacheck_docs', 'cmid', ['typeid' => $typeid]);
     $modulecontext = context_module::instance($cmid, MUST_EXIST);
     if (has_capability('plagiarism/advacheck:checkedby', $modulecontext) || has_capability('plagiarism/advacheck:updatereport', $modulecontext)) {

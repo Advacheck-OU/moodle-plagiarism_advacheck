@@ -27,8 +27,10 @@ namespace plagiarism_advacheck;
 use context;
 use context_course;
 use plagiarism_advacheck\local\advacheck_constants;
+use plagiarism_advacheck\local\index_manager;
 
 require_once "local/constants.php";
+require_once "local/index_manager.php";
 
 defined('MOODLE_INTERNAL') || die();
 class eventobservers
@@ -65,16 +67,13 @@ class eventobservers
             return true;
         }
 
-        // Let's delete previous editions.
-        self::delete_prev($event->component, 0, $event->objectid, $event->userid, advacheck_constants::PLAGIARISM_ADVACHECK_QUIZ, $event->other['quizid']);
-        self::delete_prev($event->component, 0, $event->objectid, $event->userid, advacheck_constants::PLAGIARISM_ADVACHECK_FILE, $event->other['quizid']);
         // Let's delete previous editions; the type of document is not important for the forum. delete_prev is called only once for it.
         // Let's get the course context.
         $context_course = context_course::instance($event->courseid, MUST_EXIST);
         // If file checking is enabled.
         if (!empty($course_cfg->checkfile)) {
             $sql =
-                "SELECT DISTINCT qas.id, att.attempt
+                "SELECT DISTINCT qas.id, att.attempt, q.id AS questionid
                    FROM {question_attempt_steps} qas 
                    JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND asd.name = 'attachments'
                    JOIN {question_attempts} qa ON qas.questionattemptid = qa.id
@@ -148,6 +147,8 @@ class eventobservers
                         );
                         continue;
                     }
+                    // Let's delete previous editions.
+                    self::delete_prev($event, $event->objectid, advacheck_constants::PLAGIARISM_ADVACHECK_FILE, 0, $ef->questionid);
                     // Add it to the queue with the status - awaiting unloading.
                     self::add_to_queue(
                         advacheck_constants::PLAGIARISM_ADVACHECK_FILE,
@@ -161,7 +162,8 @@ class eventobservers
                         $event->courseid,
                         $event->contextinstanceid,
                         0,
-                        $ef->attempt
+                        $ef->attempt,
+                        $ef->questionid
                     );
                 }
             }
@@ -171,7 +173,7 @@ class eventobservers
         if (!empty($course_cfg->checktext)) {
             // Based on the test attempt ID, we get the ID of the answer to the essay type question and the text that we will receive in get_links.
             $sql =
-                "SELECT DISTINCT qas.id, qa.responsesummary, att.attempt
+                "SELECT DISTINCT qas.id, qa.responsesummary, att.attempt, q.id AS questionid
                    FROM {question_attempt_steps} qas 
                    JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND asd.name = 'answer'
                    JOIN {question_attempts} qa ON qas.questionattemptid = qa.id
@@ -233,6 +235,8 @@ class eventobservers
                     );
                     continue;
                 }
+                // Let's delete previous editions.
+                self::delete_prev($event, $event->objectid, advacheck_constants::PLAGIARISM_ADVACHECK_QUIZ, 0, $et->questionid);
                 // Add it to the queue with status 2 - awaiting unloading.
                 self::add_to_queue(
                     advacheck_constants::PLAGIARISM_ADVACHECK_QUIZ,
@@ -246,7 +250,8 @@ class eventobservers
                     $event->courseid,
                     $event->contextinstanceid,
                     0,
-                    $et->attempt
+                    $et->attempt,
+                    $et->questionid
                 );
             }
         }
@@ -295,8 +300,8 @@ class eventobservers
         $ct = $ct ? $ct->stud_check : 0;
 
         // Let's delete previous editions.
-        self::delete_prev($event->component, 0, $event->objectid, $event->userid, advacheck_constants::PLAGIARISM_ADVACHECK_WORKSHOP);
-        self::delete_prev($event->component, 0, $event->objectid, $event->userid, advacheck_constants::PLAGIARISM_ADVACHECK_FILE);
+        self::delete_prev($event, $event->objectid, advacheck_constants::PLAGIARISM_ADVACHECK_WORKSHOP);
+        self::delete_prev($event, $event->objectid, advacheck_constants::PLAGIARISM_ADVACHECK_FILE);
         // Let's get the course context.
         $context_course = context_course::instance($event->courseid, MUST_EXIST);
 
@@ -479,12 +484,10 @@ class eventobservers
             return true;
         }
         // Let's delete previous editions.
-        self::delete_prev($event->component, $event->other['discussionid'], $event->objectid, $event->userid, advacheck_constants::PLAGIARISM_ADVACHECK_FORUM);
-        self::delete_prev($event->component, $event->other['discussionid'], $event->objectid, $event->userid, advacheck_constants::PLAGIARISM_ADVACHECK_FILE);
+        self::delete_prev($event, $event->objectid, advacheck_constants::PLAGIARISM_ADVACHECK_FORUM, $event->other['discussionid']);
+        self::delete_prev($event, $event->objectid, advacheck_constants::PLAGIARISM_ADVACHECK_FILE, $event->other['discussionid']);
         // Let's break down the context of the course.
         $context_course = context_course::instance($event->courseid, MUST_EXIST);
-        // Let's request the modification date of the message; you can also use $event->timecreated, but it's better to take it from the message itself.
-        $timepost = $DB->get_record('forum_posts', ['id' => $event->objectid], 'modified')->modified;
         // If file checking is enabled.
         if (!empty($course_cfg->checkfile)) {
             // We look at the hashes of the paths to the downloaded files.
@@ -555,7 +558,7 @@ class eventobservers
                     $f->get_id(),
                     advacheck_constants::PLAGIARISM_ADVACHECK_WAITUPLOAD,
                     $event->objectid,
-                    $timepost,
+                    $event->timecreated,
                     $f->get_userid(),
                     0,
                     $event->other['discussionid'],
@@ -614,7 +617,7 @@ class eventobservers
             $hash,
             advacheck_constants::PLAGIARISM_ADVACHECK_WAITUPLOAD,
             $event->objectid,
-            $timepost,
+            $event->timecreated,
             $event->userid,
             0,
             $event->other['discussionid'],
@@ -671,7 +674,7 @@ class eventobservers
         $c = $c ? $c->stud_check : 0;
 
         // Let's delete previous editions of the text response.
-        self::delete_prev($event->component, $ass_sub->assignment, $event->objectid, $event->userid, advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN);
+        self::delete_prev($event, $event->objectid, advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN, 0, 0, $ass_sub->attemptnumber);
         // Let's take a hash.
         $hash = \plagiarism_advacheck\local\document_queue_manager::get_strip_text_content_hash($event->other['content']);
         // Let's check whether this message (from a teacher or administrator) needs to be checked in the AP.
@@ -764,7 +767,7 @@ class eventobservers
         );
         $c = $c ? $c->stud_check : 0;
         // We will delete previous editions.
-        self::delete_prev($event->component, $ass_sub->assignment, $event->objectid, $event->userid, advacheck_constants::PLAGIARISM_ADVACHECK_FILE);
+        self::delete_prev($event, $event->objectid, advacheck_constants::PLAGIARISM_ADVACHECK_FILE, 0, 0, $ass_sub->attemptnumber);
         // If file checking is enabled.
         if (!empty($course_cfg->checkfile)) {
             // We look at the hashes of the paths to the downloaded files.
@@ -987,19 +990,18 @@ class eventobservers
      * If the document is being edited, it removes previous entries for this response from the queue.
      *
      * @global \moodle_database $DB driver object.
-     * @param string $component component name.
+     * @param \core\event\base $event Event object.
      * @param int $compid component id.
-     * @param int $objectid message/reply ID.
-     * @param int $userid
-     * @param string $doctype Document type: file/assignment/forum/essay/workshop.
+     * @param int $doctype Document type: file/assignment/forum/essay/workshop.
+     * @param int $discussion Id of discussion.
      * @param int $quizid Id of quiz.
      */
-    private static function delete_prev($component, $compid, $objectid, $userid, $doctype, $quizid = 0)
+    private static function delete_prev($event, $compid, $doctype, $discussion = 0, $questionid = 0, $attemptnumber = 0, )
     {
         global $DB;
         $params = [];
-        $params[] = $objectid;
-        if ($component == 'mod_forum') {
+        $params[] = $event->objectid;
+        if ($event->component == 'mod_forum') {
             // We took information about a message where the editing time is different from the creation time.
             $sql =
                 "SELECT *
@@ -1007,7 +1009,7 @@ class eventobservers
                   WHERE fp.modified > fp.created 
                         AND fp.id = ?";
             $cond = ['discussion' => $compid];
-        } else if ($component == 'assignsubmission_onlinetext' || $component == 'assignsubmission_file') {
+        } else if ($event->component == 'assignsubmission_onlinetext' || $event->component == 'assignsubmission_file') {
             // We took information about the answer, where the editing time is different from the creation time.
             $sql =
                 "SELECT *
@@ -1015,14 +1017,14 @@ class eventobservers
                   WHERE ass.timemodified > ass.timecreated 
                         AND ass.id = ?";
             $cond = ['assignment' => $compid];
-        } else if ($component == 'mod_workshop') {
+        } else if ($event->component == 'mod_workshop') {
             // We took information about the answer, where the editing time is different from the creation time.
             $sql =
                 "SELECT *
                    FROM {workshop_submissions} ws
                   WHERE ws.timemodified > ws.timecreated 
                         AND ws.id = ?";
-        } else if ($component == 'mod_quiz') {
+        } else if ($event->component == 'mod_quiz') {
             $sql =
                 "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid
                    FROM {question_attempts} qa 
@@ -1030,26 +1032,40 @@ class eventobservers
                    JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND (asd.name = 'attachments' OR asd.name = 'answer')
                    JOIN {question} q ON qa.questionid = q.id AND q.qtype = 'essay'
                    JOIN {quiz_attempts} quiza ON quiza.uniqueid = qa.questionusageid
-                  WHERE quiza.quiz = ? 
+                  WHERE quiza.uniqueid = ? 
                         AND qas.userid = ? ";
-            $params[] = $quizid;
-            $params[] = $userid;
+            $params[] = $questionid;
+            $params[] = $event->userid;
         }
         // If the response was changed, then we will delete all entries from the queue with the ID of this message.
         if ($DB->record_exists_sql($sql, $params)) {
-            $cond['answerid'] = $objectid;
-            $cond['userid'] = $userid;
-            $cond['doctype'] = $doctype;
-            // Let's take a document that needs to be removed from the index.
-            $doc = $DB->get_record('plagiarism_advacheck_docs', array_merge($cond, ['status' => advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX]));
 
-            if ($doc) {
-                \plagiarism_advacheck\local\upload_start_check_manual::remove_from_index($doc);
+            $indexmanager = new index_manager(
+                $event->contextinstanceid,
+                $event->userid,
+                $doctype,
+                $event->timecreated,
+                $discussion
+            );
+
+            $indexmanager->remove_from_index(false, 'plagiarism_advacheck\eventobservers');
+            $cond = [
+                'cmid' => $event->contextinstanceid,
+                'userid' => $event->userid,
+                'doctype' => $doctype
+            ];
+            if ($discussion != 0) {
+                $cond['discussion'] = $discussion;
+            }
+            if ($attemptnumber != 0) {
+                $cond['attemptnumber'] = $attemptnumber;
+            }
+            if ($questionid != 0) {
+                $cond['questionid'] = $questionid;
             }
             $DB->delete_records('plagiarism_advacheck_docs', $cond);
         }
     }
-
     /**
      * Checks whether a document can be sent for review from a given user in a given context?
      *
@@ -1082,6 +1098,7 @@ class eventobservers
      * @param int $cmid Id of course module
      * @param int $stud_check Count of student checks
      * @param int $attempt Attempt number
+     * @param int $questionid Id of question fot quiz
      */
     public static function add_to_queue(
         $doctype,
@@ -1095,7 +1112,8 @@ class eventobservers
         $courseid,
         $cmid,
         $stud_check = 0,
-        $attempt = 0
+        $attempt = 0,
+        $questionid = 0
     ) {
         global $DB;
         $sql =
@@ -1140,6 +1158,7 @@ class eventobservers
         $row['cmid'] = $cmid;
         $row['stud_check'] = $stud_check;
         $row['attemptnumber'] = $attempt;
+        $row['questionid'] = $questionid;
         $DB->insert_record('plagiarism_advacheck_docs', (object) $row);
     }
 

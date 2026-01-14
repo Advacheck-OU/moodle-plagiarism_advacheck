@@ -24,7 +24,6 @@ defined('MOODLE_INTERNAL') || die();
 
 use \plagiarism_advacheck\local\advacheck_constants;
 use \plagiarism_advacheck\local\upload_start_check_manual;
-use \plagiarism_advacheck\local\queue_log_manager;
 use \plagiarism_advacheck\local\document_queue_manager;
 
 // Get global class.
@@ -295,13 +294,13 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 // The document is in the process of being reviewed.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_CHECKING:
                     // Animation of the verification process.
-                    $data = [
+                    $contextdata = [
                         'typeid' => $typeid,
                         'hidden' => '',
                         'infostring' => get_string('checking', 'plagiarism_advacheck')
                     ];
                     // Get loader animation.
-                    $output .= $OUTPUT->render_from_template('plagiarism_advacheck/loaderimg', $data);
+                    $output .= $OUTPUT->render_from_template('plagiarism_advacheck/loaderimg', $contextdata);
                     break;
                 // Insufficient number of words.
                 case advacheck_constants::PLAGIARISM_ADVACHECK_LESSNWORDS:
@@ -440,36 +439,13 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
     {
         global $OUTPUT, $USER;
         $output = '';
+        $plagiarism = $data->plagiarism;
+        $legal = $data->legal;
+        $selfcite = $data->selfcite;
+        $scoreai = $data->scoreai;
+        $orig = 0;
 
-        $plagiarism = isset($data->plagiarism) ? $data->plagiarism : 0;
-        $legal = isset($data->legal) ? $data->legal : 0;
-        $selfcite = isset($data->selfcite) ? $data->selfcite : 0;
-
-        if ($plagiarism == round($plagiarism, 0)) {
-            $plagiarism = round($plagiarism, 0);
-        } else {
-            $plagiarism = round($plagiarism, 2);
-        }
-
-        if ($legal == round($legal, 0)) {
-            $legal = round($legal, 0);
-        } else {
-            $legal = round($legal, 2);
-        }
-
-        if ($selfcite == round($selfcite, 0)) {
-            $selfcite = round($selfcite, 0);
-        } else {
-            $selfcite = round($selfcite, 2);
-        }
-
-        $orig = 100 - $plagiarism - $legal - $selfcite;
-
-        if ($orig == round($orig, 0)) {
-            $orig = round($orig, 0);
-        } else {
-            $orig = round($orig, 2);
-        }
+        upload_start_check_manual::calc_orig($plagiarism, $legal, $selfcite, $orig, $scoreai);
 
         // Get the link according to the rights.
         $link = '';
@@ -505,32 +481,38 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
         $class = "";
         $iconclass = "";
         $icontype = "";
-        if ($orig >= self::$plugin_cfg->originality_limit) {
-            $class .= " advacheck-green";
-            $iconclass .= "advacheck-green_icon";
-            $icontype .= "fa-solid fa-circle-check";
-        } else {
+        if ($orig <= self::$plugin_cfg->originality_limit || $scoreai >= self::$plugin_cfg->aiscore_limit) {
             $class .= " advacheck-red";
             $iconclass .= "advacheck-red_icon";
             $icontype .= "fa-solid fa-circle-exclamation";
+        } else {
+            $class .= " advacheck-green";
+            $iconclass .= "advacheck-green_icon";
+            $icontype .= "fa-solid fa-circle-check";
         }
 
         // Html of button to download certificate about check.
         // Optional functionality, check with the verification services subscription provider.
         $downloadcertificate = '';
         if (advacheck_constants::PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE) {
-            $data = [
+            $contextdata = [
                 'downloadhref' => new moodle_url("/plagiarism/advacheck/downloadfile.php", ['userid' => $data->userid, 'docid' => $data->docid])
             ];
-            $downloadcertificate = $OUTPUT->render_from_template('plagiarism_advacheck/downloadcertificate', $data);
+            $downloadcertificate = $OUTPUT->render_from_template('plagiarism_advacheck/downloadcertificate', $contextdata);
         }
         $plagiarismresulthelp = $OUTPUT->help_icon('checkresult', 'plagiarism_advacheck');
-        $data = [
+        $contextdata = [
+            'typeid' => $data->typeid,
+            'scoreai' => $scoreai,
+        ];
+        $scoreaibar = $OUTPUT->render_from_template('plagiarism_advacheck/scoreaibar', $contextdata);
+        $contextdata = [
             'typeid' => $data->typeid,
             'class' => $class,
             'plagiarism' => $plagiarism,
             'selfcite' => $selfcite,
             'legal' => $legal,
+            'scoreai' => $scoreai,
             'originality' => $orig,
             'reportlinkhref' => $link,
             'updatereporthref' => '#',
@@ -540,9 +522,10 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
             'plagiarismresulthelp' => $plagiarismresulthelp,
             'coloricon' => $iconclass,
             'icontype' => $icontype,
+            'scoreaibar' => $scoreaibar,
 
         ];
-        $output = $OUTPUT->render_from_template('plagiarism_advacheck/plagiarismresult', $data);
+        $output = $OUTPUT->render_from_template('plagiarism_advacheck/plagiarismresult', $contextdata);
         return $output;
     }
 
@@ -570,25 +553,31 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
             // Optional functionality, check with the verification services subscription provider.
             $downloadcertificate = '';
             if (advacheck_constants::PLAGIARISM_ADVACHECK_VIEW_CERTIFICATE) {
-                $data = [
+                $contextdata = [
                     'downloadhref' => new moodle_url("/plagiarism/advacheck/downloadfile.php", ['userid' => self::$userid, 'docid' => $docid])
                 ];
-                $downloadcertificate = $OUTPUT->render_from_template('plagiarism_advacheck/downloadcertificate', $data);
+                $downloadcertificate = $OUTPUT->render_from_template('plagiarism_advacheck/downloadcertificate', $contextdata);
             }
-            $data = [
+            $contextdata = [
                 'typeid' => $typeid,
                 'hidden' => 'advacheck-hidden',
                 'infostring' => get_string('checking', 'plagiarism_advacheck')
             ];
             // Get loader animation.
-            $loaderhtml = $OUTPUT->render_from_template('plagiarism_advacheck/loaderimg', $data);
+            $loaderhtml = $OUTPUT->render_from_template('plagiarism_advacheck/loaderimg', $contextdata);
             $plagiarismresulthelp = $OUTPUT->help_icon('checkresult', 'plagiarism_advacheck');
-            $data = [
+            $contextdata = [
+                'typeid' => $typeid,
+                'scoreai' => '-',
+            ];
+            $scoreaibar = $OUTPUT->render_from_template('plagiarism_advacheck/scoreaibar', $contextdata);
+            $contextdata = [
                 'typeid' => $typeid,
                 'class' => 'advacheck-hidden',
                 'plagiarism' => '-',
                 'selfcite' => '-',
                 'legal' => '-',
+                'scoreai' => '-',
                 'originality' => '-',
                 'reportlinkhref' => '#',
                 'updatereporthref' => '#',
@@ -598,10 +587,11 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 'plagiarismresulthelp' => $plagiarismresulthelp,
                 'hidden' => 'advacheck-hidden',
                 'icontype' => 'invisibleicon',
+                'scoreaibar' => $scoreaibar,
 
             ];
-            $plagiarismresult = $OUTPUT->render_from_template('plagiarism_advacheck/plagiarismresult', $data);
-            $data = [
+            $plagiarismresult = $OUTPUT->render_from_template('plagiarism_advacheck/plagiarismresult', $contextdata);
+            $contextdata = [
                 'typeid' => $typeid,
                 'loader' => $loaderhtml,
                 'courseid' => self::$courseid,
@@ -610,7 +600,7 @@ class plagiarism_plugin_advacheck extends plagiarism_plugin
                 'userid' => self::$userid,
                 'plagiarismresult' => $plagiarismresult,
             ];
-            $output = $OUTPUT->render_from_template('plagiarism_advacheck/checkbutton', $data);
+            $output = $OUTPUT->render_from_template('plagiarism_advacheck/checkbutton', $contextdata);
         }
         return $output;
     }
@@ -671,7 +661,9 @@ function plagiarism_advacheck_coursemodule_standard_elements($formwrapper, $mfor
         $cmid = $cm->id;
     }
 
-    $courseid = $formwrapper->get_course()->id;
+    if ($course = $formwrapper->get_course()) {
+        $courseid = $course->id;
+    }
 
     $courseid = $courseid ? $courseid : $COURSE->id;
     $coursecontext = context_course::instance($courseid, MUST_EXIST);
@@ -812,6 +804,7 @@ function plagiarism_advacheck_coursemodule_standard_elements($formwrapper, $mfor
 
         $mform->addElement('advcheckbox', 'advacheck_docsectappendix', get_string('docsectappendix', 'plagiarism_advacheck'), '', [], [0, 1]);
         $mform->disabledIf('advacheck_docsectappendix', 'advacheck_mode', 'eq', 0);
+
         $docsectappendixdefaultglobal = isset($plugin_cfg->docsectappendixdefault) ? $plugin_cfg->docsectappendixdefault : 1;
         $docsectappendix = isset($mod_settings->docsectappendix) ? $mod_settings->docsectappendix : $docsectappendixdefaultglobal;
         $mform->setDefault('advacheck_docsectappendix', $docsectappendix);
@@ -911,6 +904,10 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
             $row->disp_notices = $data->disp_notices;
         }
 
+        if (isset($data->works_types)) {
+            $row->works_types = $data->works_types;
+        }
+
         if (isset($data->advacheck_docsecttitle)) {
             $row->docsecttitle = $data->advacheck_docsecttitle;
         }
@@ -975,7 +972,7 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
             } else if ($modulename == "assign") {
                 unset($subs);
                 $sql =
-                    "SELECT sub.id, sub_text.onlinetext AS txt, sub.userid, sub.assignment AS assign, sub.status, sub_file.numfiles, sub.timemodified AS time                
+                    "SELECT sub.id, sub_text.onlinetext AS txt, sub.userid, sub.assignment AS assign, sub.status, sub_file.numfiles, sub.timemodified AS time, sub.attemptnumber as attempt                
                        FROM {assign_submission} sub
                   LEFT JOIN {assignsubmission_onlinetext} sub_text ON sub.id = sub_text.submission
                   LEFT JOIN {assignsubmission_file} sub_file ON sub.id = sub_file.submission
@@ -1016,7 +1013,7 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
             } else if ($modulename == 'quiz') {
                 if (!empty($data->advacheck_checktext)) {
                     $sql =
-                        "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid
+                        "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid, q.id AS questionid, quiza.attempt
                            FROM {question_attempts} qa 
                            JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
                            JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND asd.name = 'answer'
@@ -1034,7 +1031,7 @@ function plagiarism_advacheck_coursemodule_edit_post_actions($data, $course)
                 }
                 if (!empty($data->advacheck_checkfile)) {
                     $sql =
-                        "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid
+                        "SELECT DISTINCT qas.id, qa.responsesummary as txt, qa.timemodified as time, qas.userid, q.id AS questionid, quiza.attempt
                            FROM {question_attempts} qa 
                            JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
                            JOIN {question_attempt_step_data} asd ON qas.id = asd.attemptstepid AND asd.name = 'attachments'

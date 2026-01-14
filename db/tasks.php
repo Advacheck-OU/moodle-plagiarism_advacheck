@@ -53,4 +53,14 @@ $tasks = [
         'dayofweek' => '*',
         'disabled' => 0,
     ],
+    /*[
+        'classname' => 'plagiarism_advacheck\task\patch_remove_from_index',
+        'blocking' => 0,
+        'minute' => '0',
+        'hour' => '4',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+        'disabled' => 0,
+    ],*/
 ];

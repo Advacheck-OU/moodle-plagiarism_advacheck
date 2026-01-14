@@ -144,33 +144,15 @@ class upload_start_check_manual
             $this->docrecord->id,
             $this->docrecord->status
         );
-
-        $docsparams = [
-            'doctype' => advacheck_constants::PLAGIARISM_ADVACHECK_FILE,
-            'userid' => $this->docrecord->userid,
-            'status' => advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX,
-            'answerid' => $this->docrecord->answerid,
-            'cmid' => $this->docrecord->cmid,
-        ];
-        $sql = "SELECT *
-              FROM {plagiarism_advacheck_docs}
-             WHERE doctype = ?
-                   AND userid = ?
-                   AND status = ?
-                   AND answerid <> ?
-                   AND cmid = ?
-           ";
-        // If there is a discussion ID or a task ID, then we will indicate it to search for documents.
-        if ($this->docrecord->assignment != 0) {
-            $docsparams[] = $this->docrecord->assignment;
-            $sql .= "AND assignment = ?
-        ";
-        } else if ($this->docrecord->discussion != 0) {
-            $docsparams[] = $this->docrecord->discussion;
-            $sql .= "AND discussion = ?
-        ";
-        }
-
+        $indexmanager = new index_manager(
+            $this->docrecord->cmid,
+            $this->docrecord->userid,
+            advacheck_constants::PLAGIARISM_ADVACHECK_FILE,
+            $this->docrecord->timeadded,
+            $this->docrecord->discussion,
+            $this->docrecord->questionid
+        );
+        $indexmanager->remove_from_index();
         $fs = get_file_storage();
         $file = $fs->get_file_by_id($this->typeid);
 
@@ -183,16 +165,7 @@ class upload_start_check_manual
         // Let's determine which course module the file is from.
         $component = $file->get_component();
         $itemid = $file->get_itemid();
-        // We will receive the response documents from the previous attempt.
-        if ($component == 'question') {
-            $sql .= " AND attemptnumber <> ?";
-            $docsparams[] = $this->docrecord->attemptnumber;
-        }
-        $prevfiles = $DB->get_records_sql($sql, $docsparams);
 
-        foreach ($prevfiles as $f) {
-            $this->remove_from_index($f);
-        }
         // We form the document attributes.
         $this->data_attr->coursefullname = $DB->get_field('course', 'fullname', ['id' => $this->courseid]);
 
@@ -274,71 +247,61 @@ class upload_start_check_manual
         $this->data_attr->userid = $this->userid;
 
         if (!$this->islongstr) {
+            $indexmanager = new index_manager(
+                $this->docrecord->cmid,
+                $this->docrecord->userid,
+                $this->doctype,
+                $this->docrecord->timeadded,
+                $this->docrecord->discussion,
+                $this->docrecord->questionid
+            );
+            $indexmanager->remove_from_index();
             // Select documents from previous responses to remove them from the index.
             $sql =
                 "SELECT *
                    FROM {plagiarism_advacheck_docs}
                   WHERE doctype = ?
                         AND userid = ?
-                        AND status = ?
-                        AND answerid <> ?";
+                        AND status = ?";
             if ($this->doctype == advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN) {
-                if ($this->docrecord) {
-                    // A record of the start of document processing.
-                    $this->logobject->add_log_record(
-                        $this->docrecord->externalid,
-                        '',
-                        10,
-                        $this->docrecord->courseid,
-                        $this->docrecord->cmid,
-                        $this->docrecord->assignment,
-                        $this->docrecord->discussion,
-                        $this->docrecord->userid,
-                        $this->docrecord->answerid,
-                        $this->docrecord->id,
-                        $this->docrecord->status
-                    );
-                    // If there is data from previous responses, we will remove it from the index.
-                    $sql_p = $sql . ' AND assignment = ?';
-                    $checkedSubs = $DB->get_records_sql($sql_p, [advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN, $this->docrecord->userid, advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX, $this->docrecord->answerid, $this->assignment]);
-
-                    foreach ($checkedSubs as $sub) {
-                        $this->remove_from_index($sub);
-                    }
-                }
-                $this->data_attr->cm_name = $DB->get_field('assign', 'name', ['id' => $this->assignment]);
+                // A record of the start of document processing.
+                $this->logobject->add_log_record(
+                    $this->docrecord->externalid,
+                    '',
+                    10,
+                    $this->docrecord->courseid,
+                    $this->docrecord->cmid,
+                    $this->docrecord->assignment,
+                    $this->docrecord->discussion,
+                    $this->docrecord->userid,
+                    $this->docrecord->answerid,
+                    $this->docrecord->id,
+                    $this->docrecord->status
+                );
+                $this->data_attr->cm_name = $DB->get_field('assign', 'name', ['id' => $this->docrecord->assignment]);
             }
 
             if ($this->doctype == advacheck_constants::PLAGIARISM_ADVACHECK_FORUM) {
-                if ($this->docrecord) {
-                    // A record of the start of document processing.
-                    $this->logobject->add_log_record(
-                        $this->docrecord->externalid,
-                        '',
-                        10,
-                        $this->docrecord->courseid,
-                        $this->docrecord->cmid,
-                        $this->docrecord->assignment,
-                        $this->docrecord->discussion,
-                        $this->docrecord->userid,
-                        $this->docrecord->answerid,
-                        $this->docrecord->id,
-                        $this->docrecord->status
-                    );
-                    // If there is data from previous responses, we will remove it from the index.
-                    $sql_p = $sql . ' AND discussion = ?';
-                    $checkedPosts = $DB->get_records_sql($sql_p, [advacheck_constants::PLAGIARISM_ADVACHECK_FORUM, $this->docrecord->userid, advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX, $this->docrecord->answerid, $this->discussion]);
-
-                    foreach ($checkedPosts as $post) {
-                        $this->remove_from_index($post);
-                    }
-                }
+                // A record of the start of document processing.
+                $this->logobject->add_log_record(
+                    $this->docrecord->externalid,
+                    '',
+                    10,
+                    $this->docrecord->courseid,
+                    $this->docrecord->cmid,
+                    $this->docrecord->assignment,
+                    $this->docrecord->discussion,
+                    $this->docrecord->userid,
+                    $this->docrecord->answerid,
+                    $this->docrecord->id,
+                    $this->docrecord->status
+                );
                 $sql_info =
                     "SELECT fd.name AS d_name, f.name AS f_name
                        FROM {forum_discussions} fd
                        JOIN {forum} f ON fd.forum = f.id
                       WHERE fd.id = ?";
-                $res = $DB->get_record_sql($sql_info, [$this->discussion]);
+                $res = $DB->get_record_sql($sql_info, [$this->docrecord->discussion]);
                 if ($res) {
                     $this->data_attr->cm_name = $res->f_name;
                     $this->data_attr->d_name = $res->d_name;
@@ -354,28 +317,20 @@ class upload_start_check_manual
             }
 
             if ($this->doctype == advacheck_constants::PLAGIARISM_ADVACHECK_WORKSHOP) {
-                if ($this->docrecord) {
-                    // A record of the start of document processing.
-                    $this->logobject->add_log_record(
-                        $this->docrecord->externalid,
-                        '',
-                        10,
-                        $this->docrecord->courseid,
-                        $this->docrecord->cmid,
-                        0,
-                        0,
-                        $this->docrecord->userid,
-                        $this->docrecord->answerid,
-                        $this->docrecord->id,
-                        $this->docrecord->status
-                    );
-
-                    $checkedSubs = $DB->get_records_sql($sql, [advacheck_constants::PLAGIARISM_ADVACHECK_WORKSHOP, $this->docrecord->userid, advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX, $this->docrecord->answerid]);
-
-                    foreach ($checkedSubs as $sub) {
-                        $this->remove_from_index($sub);
-                    }
-                }
+                // A record of the start of document processing.
+                $this->logobject->add_log_record(
+                    $this->docrecord->externalid,
+                    '',
+                    10,
+                    $this->docrecord->courseid,
+                    $this->docrecord->cmid,
+                    0,
+                    0,
+                    $this->docrecord->userid,
+                    $this->docrecord->answerid,
+                    $this->docrecord->id,
+                    $this->docrecord->status
+                );
                 $sql_wname =
                     "SELECT w.name 
                        FROM {workshop} w 
@@ -400,14 +355,6 @@ class upload_start_check_manual
                         $this->docrecord->status
                     );
 
-                    $sql_p = $sql . ' AND attemptnumber != ?';
-
-                    $checkedSubs = $DB->get_records_sql($sql_p, [advacheck_constants::PLAGIARISM_ADVACHECK_QUIZ, $this->docrecord->userid, advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX, $this->docrecord->answerid, $this->docrecord->attemptnumber]);
-
-                    foreach ($checkedSubs as $sub) {
-                        $this->remove_from_index($sub);
-                    }
-
                     $sql_qname =
                         "SELECT CONCAT(quiz.name, ': ', q.name) AS cm_name, '-' AS d_name, c.fullname AS course_name
                            FROM {question_attempt_steps} qas
@@ -428,102 +375,7 @@ class upload_start_check_manual
         return $this->start_doc_verify();
     }
 
-    /**
-     * Removes a document from the AP index for manual mode.
-     *
-     * @global \moodle_database $DB
-     * @param object $doc
-     */
-    public static function remove_from_index($doc)
-    {
-        global $DB;
 
-        if (empty($doc->externalid)) {
-            return;
-        }
-        $docid = $doc->externalid;
-        $api = new advacheck_api();
-        $logobject = new queue_log_manager();
-        $m = $api->set_index_status($doc->externalid, false);
-        if ($m !== true) {
-            // Processing error when trying to get the status of deleting a document from the index.
-            $status = advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_INDEX;
-            $DB->set_field('plagiarism_advacheck_docs', 'error', $m, ['id' => $doc->id]);
-            $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $doc->id]);
-            $logobject->add_log_record(
-                $doc->externalid,
-                $doc->reportedit,
-                14,
-                $doc->courseid,
-                $doc->cmid,
-                $doc->assignment,
-                $doc->discussion,
-                $doc->userid,
-                $doc->answerid,
-                $doc->id,
-                $status,
-                false,
-                $m
-            );
-        } else {
-            // A record indicating the start of deletion from the index.
-            $logobject->add_log_record(
-                $doc->externalid,
-                $doc->reportedit,
-                6,
-                $doc->courseid,
-                $doc->cmid,
-                $doc->assignment,
-                $doc->discussion,
-                $doc->userid,
-                $doc->answerid,
-                $doc->id,
-                $doc->status
-            );
-            // cycle while waiting for deletion from index.
-            do {
-                $di = $api->get_document_info($docid);
-                if (is_string($di)) {
-                    $status = advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_INDEX;
-                    $DB->set_field('plagiarism_advacheck_docs', 'error', $di, ['id' => $doc->id]);
-                    $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $doc->id]);
-                    $logobject->add_log_record(
-                        $doc->externalid,
-                        $doc->reportedit,
-                        14,
-                        $doc->courseid,
-                        $doc->cmid,
-                        $doc->assignment,
-                        $doc->discussion,
-                        $doc->userid,
-                        $doc->answerid,
-                        $doc->id,
-                        $status,
-                        false,
-                        $di
-                    );
-                }
-                // Minimum possible AP server polling frequency.
-                time_nanosleep(0, 400000000);
-            } while (isset($di->AddedToIndex));
-            // Set the status to deleted from the index.
-            $DB->set_field("plagiarism_advacheck_docs", "status", advacheck_constants::PLAGIARISM_ADVACHECK_CHECKED, ["id" => $doc->id]);
-            // A record indicating the completion of deletion from the index.
-            $logobject->add_log_record(
-                $doc->externalid,
-                $doc->reportedit,
-                7,
-                $doc->courseid,
-                $doc->cmid,
-                $doc->assignment,
-                $doc->discussion,
-                $doc->userid,
-                $doc->answerid,
-                $doc->id,
-                advacheck_constants::PLAGIARISM_ADVACHECK_CHECKED
-            );
-        }
-    }
 
     /**
      * Prepares an array with document attributes.
@@ -585,6 +437,7 @@ class upload_start_check_manual
         $this->api_data->legal = 0;
         $this->api_data->issuspicious = 0;
         $this->api_data->selfcite = 0;
+        $this->api_data->scoreai = '-';
         $this->api_data->reportedit = '';
         $this->api_data->reportread = '';
         $this->api_data->shortreport = '';
@@ -681,11 +534,12 @@ class upload_start_check_manual
                     // If the check completion status is "ready".
                     if ($st_curr->status === 'Ready') {
                         // Rounding values.
-                        $this->calc_orig($st_curr->plagiarism, $st_curr->legal, $st_curr->selfcite, $originality);
+                        $this->calc_orig($st_curr->plagiarism, $st_curr->legal, $st_curr->selfcite, $originality, $st_curr->scoreai);
                         $this->api_data->plagiarism = $st_curr->plagiarism;
                         $this->api_data->legal = $st_curr->legal;
                         $this->api_data->issuspicious = $st_curr->issuspicious;
                         $this->api_data->selfcite = $st_curr->selfcite;
+                        $this->api_data->scoreai = $st_curr->scoreai;
                         $this->api_data->reportedit = $st_curr->reportedit;
                         $this->api_data->reportread = $st_curr->reportread;
                         $this->api_data->shortreport = $st_curr->shortreport;
@@ -711,44 +565,13 @@ class upload_start_check_manual
                         // Getting course module settings: add to index or not?
                         $i = $DB->get_record('plagiarism_advacheck_course', ['courseid' => $this->docrecord->courseid, 'cmid' => $this->docrecord->cmid], 'add_to_index');
                         if ($i->add_to_index != 0) {
-                            $m = $this->api->set_index_status($this->ap_docid, true);
-                            if ($m !== true) {
-                                $status = advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_INDEX;
-                                $DB->set_field('plagiarism_advacheck_docs', 'error', $m, ['id' => $this->docrecord->id]);
-                                $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $this->docrecord->id]);
-                                $this->logobject->add_log_record(
-                                    $this->docrecord->externalid,
-                                    $this->docrecord->reportedit,
-                                    14,
-                                    $this->docrecord->courseid,
-                                    $this->docrecord->cmid,
-                                    $this->docrecord->assignment,
-                                    $this->docrecord->discussion,
-                                    $this->docrecord->userid,
-                                    $this->docrecord->answerid,
-                                    $this->docrecord->id,
-                                    $status,
-                                    false,
-                                    $m
-                                );
+                            $iman = new index_manager();
+                            $m = $iman->add_to_index($this->ap_docid);
+                            if (is_string($m)) {
                                 return $this->get_error_structure($m);
+                            } else if ($m == advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX) {
+                                $this->api_data->status = advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX;
                             }
-                            $this->api_data->status = advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX;
-                            $DB->set_field('plagiarism_advacheck_docs', 'status', advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX, ['id' => $this->docrecord->id]);
-                            // A record of adding a document to the index.
-                            $this->logobject->add_log_record(
-                                $this->api_data->externalid,
-                                $this->api_data->reportedit,
-                                8,
-                                $this->docrecord->courseid,
-                                $this->docrecord->cmid,
-                                $this->docrecord->assignment,
-                                $this->docrecord->discussion,
-                                $this->docrecord->userid,
-                                $this->docrecord->answerid,
-                                $this->docrecord->id,
-                                advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX
-                            );
                         }
                         // A record of the completion of document processing.
                         $this->logobject->add_log_record(
@@ -815,11 +638,12 @@ class upload_start_check_manual
                         return $this->get_error_structure(get_string('error_index', 'plagiarism_advacheck', $this->docrecord->error));
                     // In other cases, we display the results of the check.
                     default:
-                        $this->calc_orig($this->docrecord->plagiarism, $this->docrecord->legal, $this->docrecord->selfcite, $originality);
+                        $this->calc_orig($this->docrecord->plagiarism, $this->docrecord->legal, $this->docrecord->selfcite, $originality, $this->docrecord->scoreai);
                         $this->api_data->plagiarism = $this->docrecord->plagiarism;
                         $this->api_data->legal = $this->docrecord->legal;
                         $this->api_data->issuspicious = (bool) $this->docrecord->issuspicious;
                         $this->api_data->selfcite = $this->docrecord->selfcite;
+                        $this->api_data->scoreai = $this->docrecord->scoreai;
                         $this->api_data->reportedit = $this->docrecord->reportedit;
                         $this->api_data->reportread = $this->docrecord->reportread;
                         $this->api_data->shortreport = $this->docrecord->shortreport;
@@ -839,6 +663,7 @@ class upload_start_check_manual
             $this->result->plagiarism = $this->api_data->plagiarism . '%';
             $this->result->legal = $this->api_data->legal . '%';
             $this->result->selfcite = $this->api_data->selfcite . '%';
+            $this->result->scoreai = $this->api_data->scoreai == '-' ? $this->api_data->scoreai . '%' : '-';
             $this->result->originality = $originality . "%";
             $this->result->docid = $this->api_data->externalid;
             $this->result->issuspicious = $this->api_data->issuspicious;
@@ -874,14 +699,14 @@ class upload_start_check_manual
                     $this->result->check_studs = get_string('stud_check_after_edit', 'plagiarism_advacheck', $c);
                 }
             }
-            if ($originality >= $this->plugin_cfg->originality_limit) {
-                $this->result->class = "advacheck-green";
-                $this->result->iconclass = "advacheck-green_icon";
-                $this->result->icontype = "fa-circle-check";
-            } else {
+            if ($originality <= $this->plugin_cfg->originality_limit || $this->result->scoreai >= $this->plugin_cfg->aiscore_limit) {
                 $this->result->class = "advacheck-red";
                 $this->result->iconclass = "advacheck-red_icon";
                 $this->result->icontype = "fa-circle-exclamation";
+            } else {
+                $this->result->class = "advacheck-green";
+                $this->result->iconclass = "advacheck-green_icon";
+                $this->result->icontype = "fa-circle-check";
             }
         }
         $this->result->status = $DB->get_field('plagiarism_advacheck_docs', 'status', ['id' => $this->docrecord->id]);
@@ -959,7 +784,7 @@ class upload_start_check_manual
         // Let's write down the ID of the person who started the check, this is needed to download the pdf certificate.
         $DB->set_field('plagiarism_advacheck_docs', 'teacherid', $USER->id, ['id' => $this->docrecord->id]);
         $conn_error = '';
-        $ap_docid = $this->api->upload_doc($this->filename, $this->content, $this->docrecord->courseid, false, $conn_error, $this->data_attr->custom_attrs);
+        $ap_docid = $this->api->upload_doc($this->filename, $this->content, $this->docrecord->courseid, $this->docrecord->id, $conn_error, $this->data_attr->custom_attrs);
         // Error handling during unloading.
         if (is_string($ap_docid)) {
             $s = $ap_docid;
@@ -1188,11 +1013,12 @@ class upload_start_check_manual
 
         $originality = 0;
         if (!isset($api_data->error) && $api_data->status === "Ready") {
-            self::calc_orig($api_data->plagiarism, $api_data->legal, $api_data->selfcite, $originality);
+            self::calc_orig($api_data->plagiarism, $api_data->legal, $api_data->selfcite, $originality, $api_data->scoreai);
             $docrecord->plagiarism = $api_data->plagiarism;
             $docrecord->legal = $api_data->legal;
             $docrecord->issuspicious = $api_data->issuspicious;
             $docrecord->selfcite = $api_data->selfcite;
+            $docrecord->scoreai = $api_data->scoreai;
             $docrecord->originality = $originality;
             $docrecord->timecheck_end = $api_data->timecheck_end;
             $docrecord->reportedit = $api_data->reportedit;
@@ -1236,10 +1062,16 @@ class upload_start_check_manual
             $result->plagiarism = $docrecord->plagiarism . '% ';
             $result->selfcite = $docrecord->selfcite . '%';
             $result->legal = $docrecord->legal . '% ';
+            $result->scoreai = $docrecord->scoreai . '% ';
             $result->originality = $docrecord->originality . '% ';
             $result->issuspicious = $api_data->issuspicious;
 
-            $context = \context_course::instance($docrecord->courseid, MUST_EXIST);
+            if ($DB->record_exists('course', ['id' => $docrecord->courseid])) {
+                $context = \context_course::instance($docrecord->courseid, MUST_EXIST);
+            } else {
+                $context = \context_system::instance();
+            }
+
             if (
                 has_capability('plagiarism/advacheck:viewfullreadreport', $context) ||
                 ($docrecord->discussion == 0 && $docrecord->assignment == 0 && $USER->id != $docrecord->userid)
@@ -1250,14 +1082,14 @@ class upload_start_check_manual
                 $result->report = $plugin_cfg->uri . $api_data->reportedit;
             }
 
-            if ($docrecord->originality >= $plugin_cfg->originality_limit) {
-                $result->class = "advacheck-green";
-                $result->iconclass = "advacheck-green_icon";
-                $result->icontype = "fa-circle-check";
-            } else {
+            if ($docrecord->originality <= $plugin_cfg->originality_limit || $docrecord->scoreai >= $plugin_cfg->aiscore_limit) {
                 $result->class = "advacheck-red";
                 $result->iconclass = "advacheck-red_icon";
                 $result->icontype = "fa-circle-exclamation";
+            } else {
+                $result->class = "advacheck-green";
+                $result->iconclass = "advacheck-green_icon";
+                $result->icontype = "fa-circle-check";
             }
         } else if (!$docrecord) {
             $result->error = get_string('docnotchecked', 'plagiarism_advacheck');
@@ -1301,9 +1133,15 @@ class upload_start_check_manual
      * @param float $legal
      * @param float $selfcite
      * @param float $originality
+     * @param float $scoreai
      */
-    public static function calc_orig(&$plagiarism, &$legal, &$selfcite, &$originality)
+    public static function calc_orig(&$plagiarism, &$legal, &$selfcite, &$originality, &$scoreai)
     {
+
+        $plagiarism = isset($plagiarism) ? $plagiarism : 0;
+        $legal = isset($legal) ? $legal : 0;
+        $selfcite = isset($selfcite) ? $selfcite : 0;
+        $scoreai = isset($scoreai) ? $scoreai : '-';
 
         if ($plagiarism == round($plagiarism, 0)) {
             $plagiarism = round($plagiarism, 0);
@@ -1321,6 +1159,14 @@ class upload_start_check_manual
             $selfcite = round($selfcite, 0);
         } else {
             $selfcite = round($selfcite, 2);
+        }
+
+        if ($scoreai != '-') {
+            if ($scoreai == round($scoreai, 0)) {
+                $scoreai = round($scoreai, 0);
+            } else {
+                $scoreai = round($scoreai, 2);
+            }
         }
 
         $originality = 100 - $plagiarism - $legal - $selfcite;

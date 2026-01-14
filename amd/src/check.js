@@ -146,17 +146,14 @@ define(['jquery', 'core/tree'], function ($) {
                     if (data.plagiarism) {
                         $("span.plagiarism-" + typeid).html(data.plagiarism);
                     }
-                    // Add selfcite.
-                    if (data.selfcite) {
-                        $("span.selfcite-" + typeid).html(data.selfcite);
-                    }
-                    // Add legal.
-                    if (data.legal) {
-                        $("span.legal-" + typeid).html(data.legal);
-                    }
-                    // Add originality.
-                    if (data.originality) {
-                        $("span.originality-" + typeid).html(data.originality);
+                    // Add score AI.
+                    if (data.scoreai) {
+                        $("span.scoreai-" + typeid).html(data.scoreai);
+                    } else {
+                        console.log('remove scoreai bar');
+                        console.log($("span.scoreai_bar-" + typeid).html());
+                        // remove scoreai bar
+                        $("span.scoreai_bar-" + typeid).html('');
                     }
                     // Suspicious doc icon
                     if (data.issuspicious && data.report) {
@@ -166,10 +163,11 @@ define(['jquery', 'core/tree'], function ($) {
                     // Link to report
                     if (data.report) {
                         var title = $(".advacheck-plagiarismresult." + typeid).attr('title');
-                        title = title.replace("{$a->plagiarism}%", data.plagiarism);
-                        title = title.replace("{$a->selfcite}%", data.selfcite);
-                        title = title.replace("{$a->originality}%", data.originality);
-                        title = title.replace("{$a->legal}%", data.legal);
+                        title = title.replace("-%", data.plagiarism);
+                        title = title.replace("-%", data.selfcite);
+                        title = title.replace("-%", data.originality);
+                        title = title.replace("-%", data.legal);
+                        title = title.replace("-%", data.scoreai);
                         var title = $(".advacheck-plagiarismresult." + typeid).attr('title', title);
                         $(".advacheck-report-" + typeid).attr('href', data.report).show();
                     }

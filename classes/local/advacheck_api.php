@@ -108,40 +108,16 @@ class advacheck_api
      * @param array $da Document attributes.
      * @return mixed
      */
-    public function upload_doc($filepath, $filecontent, $courseid, $auto, &$conn_error, $da)
+    public function upload_doc($filepath, $filecontent, $courseid, $docid, &$conn_error, $da)
     {
         global $DB, $USER;
-        // Retrieving the course teacher ID to look up the User ID record.
-        if (!$auto) {
-            $t = new \stdClass();
-            if ($auto) {
-                $sql = "SELECT u.id
-                          FROM {user} u
-                     LEFT JOIN {context} ctx ON ctx.instanceid = ?
-                          JOIN {role_assignments} tra ON tra.contextid = ctx.id 
-                               AND u.id = tra.userid
-                         WHERE  tra.roleid = 3
-                      ORDER BY u.lastname";
-
-                $t = $DB->get_record_sql($sql, [$courseid], IGNORE_MULTIPLE);
-                // If there are no teachers in the course, then write ExternalUserID=0.
-                if (!$t) {
-                    $t->id = 0;
-                }
-            } else {
-                $t->id = $USER->id;
-            }
-        } else {
-            $t = new \stdClass();
-            $t->id = $auto;
-        }
 
         // Structure of the downloaded file.
         $data = [
             "Data" => $filecontent,
             "FileName" => basename($filepath),
             "FileType" => "." . substr(strrchr($filepath, "."), 1),
-            "ExternalUserID" => $t->id,
+            "ExternalUserID" => $DB->get_field('plagiarism_advacheck_docs', 'userid', ['id' => $docid]),
             "DeveloperID" => $this->developerid,
         ];
         // Uploading a file.
@@ -250,6 +226,8 @@ class advacheck_api
                 $st_data->selfcite = $status->GetCheckStatusResult->Summary->DetailedScore->SelfCite;
                 // Suspicious document.
                 $st_data->issuspicious = $status->GetCheckStatusResult->Summary->IsSuspicious;
+                // Score AI
+                $st_data->scoreai = $status->GetCheckStatusResult->Summary->ScoreAi;
                 // We record the time of the LMS server, not the AP server.
                 $st_data->timecheck_end = time();
             }
@@ -284,6 +262,8 @@ class advacheck_api
             $result->selfcite = $report->GetReportViewResult->Summary->DetailedScore->SelfCite;
             // Suspicious document.
             $result->issuspicious = $report->GetReportViewResult->Summary->IsSuspicious;
+            // Score AI
+            $result->scoreai = $report->GetReportViewResult->Summary->ScoreAi;
             // We record the time of the LMS server, not the AP server.
             $result->timecheck_end = time();
         } catch (\SoapFault $e) {

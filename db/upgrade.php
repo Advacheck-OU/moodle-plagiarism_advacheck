@@ -177,5 +177,35 @@ function xmldb_plagiarism_advacheck_upgrade($oldversion)
         // Apgtru savepoint reached.
         upgrade_plugin_savepoint(true, 2024121016, 'plagiarism', 'advacheck');
     }
+    if ($oldversion < 2025052801) {
+
+        // Define field questionid to be added to plagiarism_advacheck_docs.
+        $table = new xmldb_table('plagiarism_advacheck_docs');
+        $field = new xmldb_field('questionid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'attemptnumber');
+
+        // Conditionally launch add field questionid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Apgtru savepoint reached.
+        upgrade_plugin_savepoint(true, 2025052801, 'plagiarism', 'advacheck');
+    }
+    if ($oldversion < 2025122317) {
+
+        // Define field scoreai to be added to plagiarism_advacheck_docs.
+        $table = new xmldb_table('plagiarism_advacheck_docs');
+        $field = new xmldb_field('scoreai', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, '-', 'selfcite');
+
+        // Conditionally launch add field scoreai.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        set_config('aiscore_limit', 60, 'plagiarism_advacheck');
+
+        // Apgtru savepoint reached.
+        upgrade_plugin_savepoint(true, 2025122317, 'plagiarism', 'advacheck');
+    }
     return true;
 }

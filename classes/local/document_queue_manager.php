@@ -240,7 +240,10 @@ class document_queue_manager
             0,
             0,
             $this->courseid,
-            $this->cmid
+            $this->cmid,
+            0,
+            $this->answertextobject->attempt,
+            $this->answertextobject->questionid
         );
     }
 
@@ -537,6 +540,8 @@ class document_queue_manager
                     $status = advacheck_constants::PLAGIARISM_ADVACHECK_WAITBLOCK;
                 }
             }
+            $attempt = isset($this->answertextobject->attempt) ? $this->answertextobject->attempt : 0;
+            $questionid = isset($this->answertextobject->questionid) ? $this->answertextobject->questionid : 0;
             eventobservers::add_to_queue(
                 advacheck_constants::PLAGIARISM_ADVACHECK_FILE,
                 $f->get_id(),
@@ -547,7 +552,10 @@ class document_queue_manager
                 $assignment,
                 $discussion,
                 $this->courseid,
-                $this->cmid
+                $this->cmid,
+                0,
+                $attempt,
+                $questionid,
             );
         }
     }

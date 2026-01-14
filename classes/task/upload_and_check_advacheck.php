@@ -27,10 +27,12 @@ use \plagiarism_advacheck\local\advacheck_constants;
 use \plagiarism_advacheck\local\upload_start_check_manual;
 use \plagiarism_advacheck\local\queue_log_manager;
 use \plagiarism_advacheck\local\advacheck_api;
+use plagiarism_advacheck\local\index_manager;
 
 require_once "$CFG->dirroot/plagiarism/advacheck/classes/local/constants.php";
 require_once "$CFG->dirroot/plagiarism/advacheck/classes/local/queue_log_manager.php";
 require_once "$CFG->dirroot/plagiarism/advacheck/classes/local/upload_start_check_manual.php";
+require_once "$CFG->dirroot/plagiarism/advacheck/classes/local/index_manager.php";
 
 class upload_and_check_advacheck extends \core\task\scheduled_task
 {
@@ -41,7 +43,6 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
      */
     private $api = null;
     private $config;
-    private $s;
     /** */
     private $logobject;
 
@@ -141,28 +142,23 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
             $userid = 0;
             $filename = '';
             $content = '';
+            // Let's take the user's response by response ID.
+            // We took the results of checks of the answers of previous attempts.            
+            $indexmanager = new index_manager(
+                $item->cmid,
+                $item->userid,
+                $item->doctype,
+                $item->timeadded,
+                $item->discussion,
+                $item->questionid,
+            );
+            $indexmanager->remove_from_index(true, 'task\upload_and_check_advacheck');
 
             if ((int) $item->doctype == advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN) {
                 // Processing text from the assignment.
                 $a = new \stdClass();
                 $a->time = date('d:m:Y H:i:s');
                 mtrace("        " . get_string('upload_and_check_assigntext', 'plagiarism_advacheck', $a));
-                // Let's take the user's response by response ID.
-                // We took the results of checks of the answers of previous attempts.
-
-                $docsparams = [
-                    'doctype' => advacheck_constants::PLAGIARISM_ADVACHECK_ASSIGN,
-                    'userid' => $item->userid,
-                    'status' => advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX,
-                    'answerid' => $item->answerid,
-                    'assignment' => $item->assignment,
-                ];
-                $checkeddocs = $DB->get_records('plagiarism_advacheck_docs', $docsparams);
-                $a = new \stdClass();
-                $a->time = date('d:m:Y H:i:s');
-                $a->cnt = count($checkeddocs);
-                mtrace("        " . get_string('upload_and_check_removefromindexcnt', 'plagiarism_advacheck', $a));
-                $this->remove_from_index($checkeddocs);
                 // We request the content and text of the response.
                 $s_sql =
                     "SELECT txt.id AS id, txt.onlinetext AS text, ass.name AS cm_name, c.fullname AS course_name
@@ -192,19 +188,6 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
                 $a = new \stdClass();
                 $a->time = date('d:m:Y H:i:s');
                 mtrace("        " . get_string('upload_and_check_forumtext', 'plagiarism_advacheck', $a));
-                $docsparams = [
-                    'doctype' => advacheck_constants::PLAGIARISM_ADVACHECK_FORUM,
-                    'userid' => $item->userid,
-                    'status' => advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX,
-                    'answerid' => $item->answerid,
-                    'discussion' => $item->discussion,
-                ];
-                $checkeddocs = $DB->get_records('plagiarism_advacheck_docs', $docsparams);
-                $a = new \stdClass();
-                $a->time = date('d:m:Y H:i:s');
-                $a->cnt = count($checkeddocs);
-                mtrace("        " . get_string('upload_and_check_removefromindexcnt', 'plagiarism_advacheck', $a));
-                $this->remove_from_index($checkeddocs);
                 $s_sql =
                     "SELECT fp.id AS id, fp.message AS text, c.fullname AS course_name, f.name AS cm_name, fd.name AS d_name
                       FROM {forum_posts} fp
@@ -248,36 +231,6 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
                 $content = $file->get_content();
                 $filename = $file->get_filename();
 
-                $docsparams = [
-                    'doctype' => advacheck_constants::PLAGIARISM_ADVACHECK_FILE,
-                    'userid' => $item->userid,
-                    'status' => advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX,
-                    'answerid' => $item->answerid,
-                ];
-
-
-                $sql_p = "SELECT * 
-                            FROM {plagiarism_advacheck_docs} 
-                           WHERE doctype = :doctype 
-                                 AND userid = :userid 
-                                 AND status = :status 
-                                 AND answerid = :answerid 
-                               ";
-                if ($file->get_component() == 'question') {
-                    $sql_p .= "AND attemptnumber <> :attemptnumber";
-                    $docsparams['attemptnumber'] = $item->attemptnumber;
-                }
-
-                $checkeddocs = $DB->get_records_sql(
-                    $sql_p,
-                    $docsparams
-                );
-                $a = new \stdClass();
-                $a->time = date('d:m:Y H:i:s');
-                $a->cnt = count($checkeddocs);
-                mtrace("        " . get_string('upload_and_check_removefromindexcnt', 'plagiarism_advacheck', $a));
-
-                $this->remove_from_index($checkeddocs);
                 // We received the id of the course module from which the file was sent
                 $itemid = $file->get_itemid();
                 $params1 = [$itemid, $item->discussion, $itemid, $item->assignment, $itemid, $itemid, $item->userid,];
@@ -334,16 +287,6 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
                 $a = new \stdClass();
                 $a->time = date('d:m:Y H:i:s');
                 mtrace("        " . get_string('upload_and_check_workshoptext', 'plagiarism_advacheck', $a));
-                $checkeddocs = $DB->get_records_sql(
-                    $sql,
-                    [advacheck_constants::PLAGIARISM_ADVACHECK_WORKSHOP, $item->userid, advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX, $item->answerid]
-                );
-                $a = new \stdClass();
-                $a->time = date('d:m:Y H:i:s');
-                $a->cnt = count($checkeddocs);
-                mtrace("        " . get_string('upload_and_check_removefromindexcnt', 'plagiarism_advacheck', $a));
-
-                $this->remove_from_index($checkeddocs);
                 // Get content and response text.
                 $s_sql =
                     "SELECT ws.id AS id, ws.content AS text, w.name AS cm_name, c.fullname AS course_name
@@ -376,15 +319,6 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
                 $a->time = date('d:m:Y H:i:s');
                 mtrace("        " . get_string('upload_and_check_quiztext', 'plagiarism_advacheck', $a));
                 $p = $sql . ' AND attemptnumber != ?';
-                $checkeddocs = $DB->get_records_sql(
-                    $sql,
-                    [advacheck_constants::PLAGIARISM_ADVACHECK_QUIZ, $item->userid, advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX, $item->answerid, $item->attemptnumber]
-                );
-                $a = new \stdClass();
-                $a->time = date('d:m:Y H:i:s');
-                $a->cnt = count($checkeddocs);
-                mtrace("        " . get_string('upload_and_check_removefromindexcnt', 'plagiarism_advacheck', $a));
-                $this->remove_from_index($checkeddocs);
                 // We request the text of the answer and the name of the test, question and course name.
                 $s_sql =
                     "SELECT qas.id, CONCAT(quiz.name, ': ', q.name) AS cm_name, c.fullname AS course_name, qa.responsesummary as text
@@ -481,7 +415,7 @@ class upload_and_check_advacheck extends \core\task\scheduled_task
                 $a->id = $item->id;
                 $a->time = date('d:m:Y H:i:s');
                 mtrace("        " . get_string('upload_and_check_uploaddoc', 'plagiarism_advacheck', $a));
-                $ap_docid = $this->api->upload_doc($filename, $content, $item->courseid, 'task\upload_and_check_advacheck', $conn_error, $doc_attr->works_types);
+                $ap_docid = $this->api->upload_doc($filename, $content, $item->courseid, $item->id, $conn_error, $doc_attr->works_types);
 
                 // Handling loading documents errors.
                 if (is_string($ap_docid)) {

@@ -103,12 +103,16 @@
 }
 
 #advacheckaligncenter {
-    align-content: center;
+    display: flex;
+    align-items: center;
+    min-width: 270px;
 }
 
 .badge.badge-pill.advacheck-plagiarismresult {
     min-height: 32px;
     font-size: 87% !important;
+    display: flex;
+    align-items: center;
 }
 
 .badge.badge-pill.advacheck-gray {

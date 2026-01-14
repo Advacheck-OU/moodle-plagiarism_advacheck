@@ -26,9 +26,11 @@ namespace plagiarism_advacheck\task;
 use \plagiarism_advacheck\local\advacheck_constants;
 use \plagiarism_advacheck\local\advacheck_api;
 use \plagiarism_advacheck\local\queue_log_manager;
+use plagiarism_advacheck\local\index_manager;
 
 require_once "$CFG->dirroot/plagiarism/advacheck/classes/local/constants.php";
 require_once "$CFG->dirroot/plagiarism/advacheck/classes/local/queue_log_manager.php";
+require_once "$CFG->dirroot/plagiarism/advacheck/classes/local/index_manager.php";
 
 class control_check_status_advacheck extends \core\task\scheduled_task
 {
@@ -174,7 +176,7 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $a->time = date('d:m:Y H:i:s');
                 mtrace("       " . get_string('control_check_status_checkready', 'plagiarism_advacheck', $a));
                 // Rounding values.
-                \plagiarism_advacheck\local\upload_start_check_manual::calc_orig($check_status->plagiarism, $check_status->legal, $check_status->selfcite, $orig);
+                \plagiarism_advacheck\local\upload_start_check_manual::calc_orig($check_status->plagiarism, $check_status->legal, $check_status->selfcite, $orig, $check_status->scoreai);
                 $res->reportedit = $check_status->reportedit;
                 $res->reportread = $check_status->reportread;
                 $res->shortreport = $check_status->shortreport;
@@ -183,6 +185,7 @@ class control_check_status_advacheck extends \core\task\scheduled_task
                 $res->legal = $check_status->legal;
                 $res->issuspicious = $check_status->issuspicious;
                 $res->selfcite = $check_status->selfcite;
+                $res->scoreai = $check_status->scoreai;
                 $res->status = advacheck_constants::PLAGIARISM_ADVACHECK_CHECKED;
                 $DB->update_record('plagiarism_advacheck_docs', $res);
                 $this->logobject->add_log_record(
@@ -357,52 +360,13 @@ class control_check_status_advacheck extends \core\task\scheduled_task
         // If the course module has indexing enabled.
         if ($doc->add_to_index != 0) {
             $docid = $doc->externalid;
-            $a = new \stdClass();
-            $a->time = date('d:m:Y H:i:s');
-            mtrace("       " . get_string('control_check_status_addtoindex', 'plagiarism_advacheck', $a));
-            $m = $this->api->set_index_status($docid, true);
-            if ($m !== true) {
-                // Error handling when adding a document to the index.
-                $a = new \stdClass();
-                $a->error = $m;
-                $a->time = date('d:m:Y H:i:s');
-                mtrace("       " . get_string('control_check_status_addtoindexerror', 'plagiarism_advacheck', $a));
-                $status = advacheck_constants::PLAGIARISM_ADVACHECK_ERROR_INDEX;
-                $DB->set_field('plagiarism_advacheck_docs', 'error', $m, ['id' => $doc->id]);
-                $DB->set_field('plagiarism_advacheck_docs', 'status', $status, ['id' => $doc->id]);
-                $this->logobject->add_log_record(
-                    $doc->externalid,
-                    $doc->reportedit,
-                    14,
-                    $doc->courseid,
-                    $doc->cmid,
-                    $doc->assignment,
-                    $doc->discussion,
-                    $doc->userid,
-                    $doc->answerid,
-                    $doc->id,
-                    $status,
-                    'task\control_check_status_advacheck',
-                    $m
-                );
+            $iman = new index_manager();
+            $m = $iman->add_to_index($docid);
+            if (is_string($m)) {
                 return;
+            } else if ($m == advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX) {
+                $doc->status = advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX;
             }
-            $doc->status = advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX;
-            $DB->set_field('plagiarism_advacheck_docs', 'status', advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX, ['id' => $doc->id]);
-            $this->logobject->add_log_record(
-                $doc->externalid,
-                $doc->reportedit,
-                8,
-                $doc->courseid,
-                $doc->cmid,
-                $doc->assignment,
-                $doc->discussion,
-                $doc->userid,
-                $doc->answerid,
-                $doc->id,
-                advacheck_constants::PLAGIARISM_ADVACHECK_ININDEX,
-                'task\control_check_status_advacheck'
-            );
         }
     }
 
